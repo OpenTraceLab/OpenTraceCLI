@@ -1,5 +1,5 @@
 /*
- * This file is part of the sigrok-cli project.
+ * This file is part of the opentrace-cli project.
  *
  * Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
  *
@@ -20,7 +20,7 @@
 #include <config.h>
 #include <glib.h>
 #include <string.h>
-#include "sigrok-cli.h"
+#include "opentrace-cli.h"
 
 #define DECODERS_HAVE_TAGS \
 	((SRD_PACKAGE_VERSION_MAJOR > 0) || \
@@ -28,25 +28,25 @@
 
 static gint sort_inputs(gconstpointer a, gconstpointer b)
 {
-	return strcmp(sr_input_id_get((struct sr_input_module *)a),
-			sr_input_id_get((struct sr_input_module *)b));
+	return strcmp(otc_input_id_get((struct otc_input_module *)a),
+			otc_input_id_get((struct otc_input_module *)b));
 }
 
 static gint sort_outputs(gconstpointer a, gconstpointer b)
 {
-	return strcmp(sr_output_id_get((struct sr_output_module *)a),
-			sr_output_id_get((struct sr_output_module *)b));
+	return strcmp(otc_output_id_get((struct otc_output_module *)a),
+			otc_output_id_get((struct otc_output_module *)b));
 }
 
 static gint sort_transforms(gconstpointer a, gconstpointer b)
 {
-	return strcmp(sr_transform_id_get((struct sr_transform_module *)a),
-			sr_transform_id_get((struct sr_transform_module *)b));
+	return strcmp(otc_transform_id_get((struct otc_transform_module *)a),
+			otc_transform_id_get((struct otc_transform_module *)b));
 }
 
 static gint sort_drivers(gconstpointer a, gconstpointer b)
 {
-	const struct sr_dev_driver *sdda = a, *sddb = b;
+	const struct otc_dev_driver *sdda = a, *sddb = b;
 
 	return strcmp(sdda->name, sddb->name);
 }
@@ -67,17 +67,17 @@ void show_version(void)
 	char *str;
 	const char *lib, *version;
 
-	printf("sigrok-cli %s\n\n", SC_PACKAGE_VERSION_STRING);
+	printf("opentrace-cli %s\n\n", SC_PACKAGE_VERSION_STRING);
 
 	printf("Libraries and features:\n");
 
-	printf("- libsigrok %s/%s (rt: %s/%s).\n",
-		SR_PACKAGE_VERSION_STRING, SR_LIB_VERSION_STRING,
-		sr_package_version_string_get(), sr_lib_version_string_get());
+	printf("- libopentrace %s/%s (rt: %s/%s).\n",
+		OTC_PACKAGE_VERSION_STRING, OTC_LIB_VERSION_STRING,
+		otc_package_version_string_get(), otc_lib_version_string_get());
 
 	s = g_string_sized_new(200);
 	g_string_append(s, " - Libs:\n");
-	l_orig = sr_buildinfo_libs_get();
+	l_orig = otc_buildinfo_libs_get();
 	for (l = l_orig; l; l = l->next) {
 		m = l->data;
 		lib = m->data;
@@ -90,16 +90,16 @@ void show_version(void)
 	printf("%s\n", s->str);
 	g_string_free(s, TRUE);
 
-	str = sr_buildinfo_host_get();
+	str = otc_buildinfo_host_get();
 	printf("  - Host: %s.\n", str);
 	g_free(str);
 
-	str = sr_buildinfo_scpi_backends_get();
+	str = otc_buildinfo_scpi_backends_get();
 	printf("  - SCPI backends: %s.\n", str);
 	g_free(str);
 
 #ifdef HAVE_SRD
-	printf("- libsigrokdecode %s/%s (rt: %s/%s).\n",
+	printf("- libopentracedecode %s/%s (rt: %s/%s).\n",
 		SRD_PACKAGE_VERSION_STRING, SRD_LIB_VERSION_STRING,
 		srd_package_version_string_get(), srd_lib_version_string_get());
 
@@ -126,10 +126,10 @@ void show_version(void)
 
 void show_supported(void)
 {
-	struct sr_dev_driver **drivers, *driver;
-	const struct sr_input_module **inputs, *input;
-	const struct sr_output_module **outputs, *output;
-	const struct sr_transform_module **transforms, *transform;
+	struct otc_dev_driver **drivers, *driver;
+	const struct otc_input_module **inputs, *input;
+	const struct otc_output_module **outputs, *output;
+	const struct otc_transform_module **transforms, *transform;
 	const GSList *l;
 	GSList *sl;
 	int i;
@@ -138,7 +138,7 @@ void show_supported(void)
 #endif
 
 	printf("Supported hardware drivers:\n");
-	drivers = sr_driver_list(sr_ctx);
+	drivers = otc_driver_list(otc_ctx);
 	for (sl = NULL, i = 0; drivers[i]; i++)
 		sl = g_slist_append(sl, drivers[i]);
 	sl = g_slist_sort(sl, sort_drivers);
@@ -150,40 +150,40 @@ void show_supported(void)
 	g_slist_free(sl);
 
 	printf("Supported input formats:\n");
-	inputs = sr_input_list();
+	inputs = otc_input_list();
 	for (sl = NULL, i = 0; inputs[i]; i++)
 		sl = g_slist_append(sl, (gpointer)inputs[i]);
 	sl = g_slist_sort(sl, sort_inputs);
 	for (l = sl; l; l = l->next) {
 		input = l->data;
-		printf("  %-20s %s\n", sr_input_id_get(input),
-				sr_input_description_get(input));
+		printf("  %-20s %s\n", otc_input_id_get(input),
+				otc_input_description_get(input));
 	}
 	printf("\n");
 	g_slist_free(sl);
 
 	printf("Supported output formats:\n");
-	outputs = sr_output_list();
+	outputs = otc_output_list();
 	for (sl = NULL, i = 0; outputs[i]; i++)
 		sl = g_slist_append(sl, (gpointer)outputs[i]);
 	sl = g_slist_sort(sl, sort_outputs);
 	for (l = sl; l; l = l->next) {
 		output = l->data;
-		printf("  %-20s %s\n", sr_output_id_get(output),
-				sr_output_description_get(output));
+		printf("  %-20s %s\n", otc_output_id_get(output),
+				otc_output_description_get(output));
 	}
 	printf("\n");
 	g_slist_free(sl);
 
 	printf("Supported transform modules:\n");
-	transforms = sr_transform_list();
+	transforms = otc_transform_list();
 	for (sl = NULL, i = 0; transforms[i]; i++)
 		sl = g_slist_append(sl, (gpointer)transforms[i]);
 	sl = g_slist_sort(sl, sort_transforms);
 	for (l = sl; l; l = l->next) {
 		transform = l->data;
-		printf("  %-20s %s\n", sr_transform_id_get(transform),
-				sr_transform_description_get(transform));
+		printf("  %-20s %s\n", otc_transform_id_get(transform),
+				otc_transform_description_get(transform));
 	}
 	printf("\n");
 	g_slist_free(sl);
@@ -198,7 +198,7 @@ void show_supported(void)
 			dec = l->data;
 			printf("  %-20s %s\n", dec->id, dec->longname);
 			/* Print protocol description upon "-l 3" or higher. */
-			if (opt_loglevel >= SR_LOG_INFO)
+			if (opt_loglevel >= OTC_LOG_INFO)
 				printf("  %-20s %s\n", "", dec->desc);
 		}
 		g_slist_free(sl);
@@ -211,7 +211,7 @@ void show_supported(void)
 void show_supported_wiki(void)
 {
 #ifndef HAVE_SRD
-	printf("Error, libsigrokdecode support not compiled in.");
+	printf("Error, libopentracedecode support not compiled in.");
 #else
 	const GSList *l;
 	GSList *sl;
@@ -226,7 +226,7 @@ void show_supported_wiki(void)
 
 	printf("== Supported protocol decoders ==\n\n");
 
-	printf("<!-- Generated via sigrok-cli --list-supported-wiki. -->\n\n");
+	printf("<!-- Generated via opentrace-cli --list-supported-wiki. -->\n\n");
 
 	printf("Number of currently supported protocol decoders: "
 		"'''%d'''.\n\n", g_slist_length(sl));
@@ -288,30 +288,30 @@ void show_supported_wiki(void)
 
 static gint sort_channels(gconstpointer a, gconstpointer b)
 {
-	const struct sr_channel *pa = a, *pb = b;
+	const struct otc_channel *pa = a, *pb = b;
 
 	return pa->index - pb->index;
 }
 
-static void print_dev_line(const struct sr_dev_inst *sdi)
+static void print_dev_line(const struct otc_dev_inst *sdi)
 {
-	struct sr_channel *ch;
+	struct otc_channel *ch;
 	GSList *sl, *l, *channels;
 	GString *s;
 	GVariant *gvar;
-	struct sr_dev_driver *driver;
+	struct otc_dev_driver *driver;
 	const char *vendor, *model, *version, *sernum;
 
-	driver = sr_dev_inst_driver_get(sdi);
-	vendor = sr_dev_inst_vendor_get(sdi);
-	model = sr_dev_inst_model_get(sdi);
-	version = sr_dev_inst_version_get(sdi);
-	sernum = sr_dev_inst_sernum_get(sdi);
-	channels = sr_dev_inst_channels_get(sdi);
+	driver = otc_dev_inst_driver_get(sdi);
+	vendor = otc_dev_inst_vendor_get(sdi);
+	model = otc_dev_inst_model_get(sdi);
+	version = otc_dev_inst_version_get(sdi);
+	sernum = otc_dev_inst_sernum_get(sdi);
+	channels = otc_dev_inst_channels_get(sdi);
 
 	s = g_string_sized_new(128);
 	g_string_assign(s, driver->name);
-	if (maybe_config_get(driver, sdi, NULL, SR_CONF_CONN, &gvar) == SR_OK) {
+	if (maybe_config_get(driver, sdi, NULL, OTC_CONF_CONN, &gvar) == OTC_OK) {
 		g_string_append(s, ":conn=");
 		g_string_append(s, g_variant_get_string(gvar, NULL));
 		g_variant_unref(gvar);
@@ -347,7 +347,7 @@ static void print_dev_line(const struct sr_dev_inst *sdi)
 
 void show_dev_list(void)
 {
-	struct sr_dev_inst *sdi;
+	struct otc_dev_inst *sdi;
 	GSList *devices, *l;
 
 	if (!(devices = device_scan()))
@@ -362,17 +362,17 @@ void show_dev_list(void)
 
 }
 
-void show_drv_detail(struct sr_dev_driver *driver)
+void show_drv_detail(struct otc_dev_driver *driver)
 {
-	const struct sr_key_info *srci;
+	const struct otc_key_info *srci;
 	GArray *opts;
 	guint i;
 
-	if ((opts = sr_dev_options(driver, NULL, NULL))) {
+	if ((opts = otc_dev_options(driver, NULL, NULL))) {
 		if (opts->len > 0) {
 			printf("Driver functions:\n");
 			for (i = 0; i < opts->len; i++) {
-				if (!(srci = sr_key_info_get(SR_KEY_CONFIG,
+				if (!(srci = otc_key_info_get(OTC_KEY_CONFIG,
 						g_array_index(opts, uint32_t, i))))
 					continue;
 				printf("    %s\n", srci->name);
@@ -381,11 +381,11 @@ void show_drv_detail(struct sr_dev_driver *driver)
 		g_array_free(opts, TRUE);
 	}
 
-	if ((opts = sr_driver_scan_options_list(driver))) {
+	if ((opts = otc_driver_scan_options_list(driver))) {
 		if (opts->len > 0) {
 			printf("Scan options:\n");
 			for (i = 0; i < opts->len; i++) {
-				if (!(srci = sr_key_info_get(SR_KEY_CONFIG,
+				if (!(srci = otc_key_info_get(OTC_KEY_CONFIG,
 						g_array_index(opts, uint32_t, i))))
 					continue;
 				printf("    %s\n", srci->id);
@@ -397,11 +397,11 @@ void show_drv_detail(struct sr_dev_driver *driver)
 
 void show_dev_detail(void)
 {
-	struct sr_dev_driver *driver_from_opt, *driver;
-	struct sr_dev_inst *sdi;
-	const struct sr_key_info *srci, *srmqi, *srmqfi;
-	struct sr_channel *ch;
-	struct sr_channel_group *channel_group, *cg;
+	struct otc_dev_driver *driver_from_opt, *driver;
+	struct otc_dev_inst *sdi;
+	const struct otc_key_info *srci, *srmqi, *srmqfi;
+	struct otc_channel *ch;
+	struct otc_channel_group *channel_group, *cg;
 	GSList *devices, *cgl, *chl, *channel_groups;
 	GVariant *gvar_dict, *gvar_list, *gvar;
 	gsize num_elements;
@@ -442,10 +442,10 @@ void show_dev_detail(void)
 	g_slist_free(devices);
 	print_dev_line(sdi);
 
-	driver = sr_dev_inst_driver_get(sdi);
-	channel_groups = sr_dev_inst_channel_groups_get(sdi);
+	driver = otc_dev_inst_driver_get(sdi);
+	channel_groups = otc_dev_inst_channel_groups_get(sdi);
 
-	if (sr_dev_open(sdi) != SR_OK) {
+	if (otc_dev_open(sdi) != OTC_OK) {
 		g_critical("Failed to open device.");
 		return;
 	}
@@ -457,7 +457,7 @@ void show_dev_detail(void)
 	select_channels(sdi);
 	channel_group = lookup_channel_group(sdi, NULL);
 
-	if (!(opts = sr_dev_options(driver, sdi, channel_group)))
+	if (!(opts = otc_dev_options(driver, sdi, channel_group)))
 		/* Driver supports no device instance options. */
 		return;
 
@@ -485,12 +485,12 @@ void show_dev_detail(void)
 	printf(":\n");
 	for (o = 0; o < opts->len; o++) {
 		key = g_array_index(opts, uint32_t, o);
-		if (!(srci = sr_key_info_get(SR_KEY_CONFIG, key)))
+		if (!(srci = otc_key_info_get(OTC_KEY_CONFIG, key)))
 			continue;
 
-		if (key == SR_CONF_TRIGGER_MATCH) {
+		if (key == OTC_CONF_TRIGGER_MATCH) {
 			if (maybe_config_list(driver, sdi, channel_group, key,
-					&gvar_list) != SR_OK) {
+					&gvar_list) != OTC_OK) {
 				printf("\n");
 				continue;
 			}
@@ -499,25 +499,25 @@ void show_dev_detail(void)
 			printf("    Supported triggers: ");
 			for (i = 0; i < num_elements; i++) {
 				switch (int32[i]) {
-				case SR_TRIGGER_ZERO:
+				case OTC_TRIGGER_ZERO:
 					c = '0';
 					break;
-				case SR_TRIGGER_ONE:
+				case OTC_TRIGGER_ONE:
 					c = '1';
 					break;
-				case SR_TRIGGER_RISING:
+				case OTC_TRIGGER_RISING:
 					c = 'r';
 					break;
-				case SR_TRIGGER_FALLING:
+				case OTC_TRIGGER_FALLING:
 					c = 'f';
 					break;
-				case SR_TRIGGER_EDGE:
+				case OTC_TRIGGER_EDGE:
 					c = 'e';
 					break;
-				case SR_TRIGGER_OVER:
+				case OTC_TRIGGER_OVER:
 					c = 'o';
 					break;
-				case SR_TRIGGER_UNDER:
+				case OTC_TRIGGER_UNDER:
 					c = 'u';
 					break;
 				default:
@@ -530,9 +530,9 @@ void show_dev_detail(void)
 			printf("\n");
 			g_variant_unref(gvar_list);
 
-		} else if (key == SR_CONF_LIMIT_SAMPLES
-				&& (sr_dev_config_capabilities_list(sdi, NULL, key)
-					& SR_CONF_LIST)) {
+		} else if (key == OTC_CONF_LIMIT_SAMPLES
+				&& (otc_dev_config_capabilities_list(sdi, NULL, key)
+					& OTC_CONF_LIST)) {
 			/*
 			 * If implemented in config_list(), this denotes the
 			 * maximum number of samples a device can send. This
@@ -541,25 +541,25 @@ void show_dev_detail(void)
 			 * have it turned off by default. The values returned
 			 * are the low/high limits.
 			 */
-			if (sr_config_list(driver, sdi, channel_group, key,
-					&gvar) == SR_OK) {
+			if (otc_config_list(driver, sdi, channel_group, key,
+					&gvar) == OTC_OK) {
 				g_variant_get(gvar, "(tt)", &low, &high);
 				g_variant_unref(gvar);
 				printf("    Maximum number of samples: %"PRIu64"\n", high);
 			}
 
-		} else if (key == SR_CONF_SAMPLERATE) {
+		} else if (key == OTC_CONF_SAMPLERATE) {
 			/* Supported samplerates */
 			printf("    %s", srci->id);
 			cur_rate = ~0ull;
 			if (maybe_config_get(driver, sdi, channel_group,
-				SR_CONF_SAMPLERATE, &gvar) == SR_OK) {
+				OTC_CONF_SAMPLERATE, &gvar) == OTC_OK) {
 				if (g_variant_is_of_type(gvar, G_VARIANT_TYPE_UINT64))
 					cur_rate = g_variant_get_uint64(gvar);
 				g_variant_unref(gvar);
 			}
-			if (maybe_config_list(driver, sdi, channel_group, SR_CONF_SAMPLERATE,
-					&gvar_dict) != SR_OK) {
+			if (maybe_config_list(driver, sdi, channel_group, OTC_CONF_SAMPLERATE,
+					&gvar_dict) != OTC_OK) {
 				printf("\n");
 				continue;
 			}
@@ -570,7 +570,7 @@ void show_dev_detail(void)
 				printf(" - supported samplerates:\n");
 				for (i = 0; i < num_elements; i++) {
 					rate = uint64[i];
-					s = sr_samplerate_string(rate);
+					s = otc_samplerate_string(rate);
 					if (!s)
 						continue;
 					printf("      %s", s);
@@ -585,17 +585,17 @@ void show_dev_detail(void)
 				uint64 = g_variant_get_fixed_array(gvar_list,
 						&num_elements, sizeof(uint64_t));
 				/* low */
-				if (!(s = sr_samplerate_string(uint64[0])))
+				if (!(s = otc_samplerate_string(uint64[0])))
 					continue;
 				printf(" (%s", s);
 				g_free(s);
 				/* high */
-				if (!(s = sr_samplerate_string(uint64[1])))
+				if (!(s = otc_samplerate_string(uint64[1])))
 					continue;
 				printf(" - %s", s);
 				g_free(s);
 				/* step */
-				if (!(s = sr_samplerate_string(uint64[2])))
+				if (!(s = otc_samplerate_string(uint64[2])))
 					continue;
 				printf(" in steps of %s)\n", s);
 				g_free(s);
@@ -603,17 +603,17 @@ void show_dev_detail(void)
 			}
 			g_variant_unref(gvar_dict);
 
-		} else if (srci->datatype == SR_T_UINT64) {
+		} else if (srci->datatype == OTC_T_UINT64) {
 			printf("    %s: ", srci->id);
 			gvar = NULL;
 			if (maybe_config_get(driver, sdi, channel_group, key,
-					&gvar) == SR_OK) {
+					&gvar) == OTC_OK) {
 				tmp_uint64 = g_variant_get_uint64(gvar);
 				g_variant_unref(gvar);
 			} else
 				tmp_uint64 = 0;
 			if (maybe_config_list(driver, sdi, channel_group,
-					key, &gvar_list) != SR_OK) {
+					key, &gvar_list) != OTC_OK) {
 				if (gvar) {
 					/* Can't list it, but we have a value to show. */
 					printf("%"PRIu64" (current)", tmp_uint64);
@@ -632,17 +632,17 @@ void show_dev_detail(void)
 			}
 			g_variant_unref(gvar_list);
 
-		} else if (srci->datatype == SR_T_STRING) {
+		} else if (srci->datatype == OTC_T_STRING) {
 			printf("    %s: ", srci->id);
 			if (maybe_config_get(driver, sdi, channel_group, key,
-					&gvar) == SR_OK) {
+					&gvar) == OTC_OK) {
 				tmp_str = g_strdup(g_variant_get_string(gvar, NULL));
 				g_variant_unref(gvar);
 			} else
 				tmp_str = NULL;
 
 			if (maybe_config_list(driver, sdi, channel_group, key,
-					&gvar) != SR_OK) {
+					&gvar) != OTC_OK) {
 				if (tmp_str) {
 					/* Can't list it, but we have a value to show. */
 					printf("%s (current)", tmp_str);
@@ -665,15 +665,15 @@ void show_dev_detail(void)
 			g_free(tmp_str);
 			g_variant_unref(gvar);
 
-		} else if (srci->datatype == SR_T_UINT64_RANGE) {
+		} else if (srci->datatype == OTC_T_UINT64_RANGE) {
 			printf("    %s: ", srci->id);
 			if (maybe_config_list(driver, sdi, channel_group, key,
-					&gvar_list) != SR_OK) {
+					&gvar_list) != OTC_OK) {
 				printf("\n");
 				continue;
 			}
 
-			if (maybe_config_get(driver, sdi, channel_group, key, &gvar) == SR_OK) {
+			if (maybe_config_get(driver, sdi, channel_group, key, &gvar) == OTC_OK) {
 				g_variant_get(gvar, "(tt)", &cur_low, &cur_high);
 				g_variant_unref(gvar);
 			} else {
@@ -695,10 +695,10 @@ void show_dev_detail(void)
 			printf("\n");
 			g_variant_unref(gvar_list);
 
-		} else if (srci->datatype == SR_T_BOOL) {
+		} else if (srci->datatype == OTC_T_BOOL) {
 			printf("    %s: ", srci->id);
 			if (maybe_config_get(driver, sdi, channel_group, key,
-					&gvar) == SR_OK) {
+					&gvar) == OTC_OK) {
 				if (g_variant_get_boolean(gvar))
 					printf("on (current), off\n");
 				else
@@ -707,15 +707,15 @@ void show_dev_detail(void)
 			} else
 				printf("on, off\n");
 
-		} else if (srci->datatype == SR_T_DOUBLE_RANGE) {
+		} else if (srci->datatype == OTC_T_DOUBLE_RANGE) {
 			printf("    %s: ", srci->id);
 			if (maybe_config_list(driver, sdi, channel_group, key,
-					&gvar_list) != SR_OK) {
+					&gvar_list) != OTC_OK) {
 				printf("\n");
 				continue;
 			}
 
-			if (maybe_config_get(driver, sdi, channel_group, key, &gvar) == SR_OK) {
+			if (maybe_config_get(driver, sdi, channel_group, key, &gvar) == OTC_OK) {
 				g_variant_get(gvar, "(dd)", &dcur_low, &dcur_high);
 				g_variant_unref(gvar);
 			} else {
@@ -737,18 +737,18 @@ void show_dev_detail(void)
 			printf("\n");
 			g_variant_unref(gvar_list);
 
-		} else if (srci->datatype == SR_T_FLOAT) {
+		} else if (srci->datatype == OTC_T_FLOAT) {
 			printf("    %s: ", srci->id);
 			tmp_flt = 0.0;
 			have_tmp_flt = FALSE;
 			if (maybe_config_get(driver, sdi, channel_group, key,
-					&gvar) == SR_OK) {
+					&gvar) == OTC_OK) {
 				tmp_flt = g_variant_get_double(gvar);
 				have_tmp_flt = TRUE;
 				g_variant_unref(gvar);
 			}
 			if (maybe_config_list(driver, sdi, channel_group, key,
-					&gvar) != SR_OK) {
+					&gvar) != OTC_OK) {
 				if (have_tmp_flt) {
 					/* Can't list, but got a value to show. */
 					printf("%f (current)", tmp_flt);
@@ -768,18 +768,18 @@ void show_dev_detail(void)
 			printf("\n");
 			g_variant_unref(gvar);
 
-		} else if (srci->datatype == SR_T_RATIONAL_PERIOD
-				|| srci->datatype == SR_T_RATIONAL_VOLT) {
+		} else if (srci->datatype == OTC_T_RATIONAL_PERIOD
+				|| srci->datatype == OTC_T_RATIONAL_VOLT) {
 			printf("    %s", srci->id);
 			if (maybe_config_get(driver, sdi, channel_group, key,
-					&gvar) == SR_OK) {
+					&gvar) == OTC_OK) {
 				g_variant_get(gvar, "(tt)", &cur_p, &cur_q);
 				g_variant_unref(gvar);
 			} else
 				cur_p = cur_q = 0;
 
 			if (maybe_config_list(driver, sdi, channel_group,
-					key, &gvar_list) != SR_OK) {
+					key, &gvar_list) != OTC_OK) {
 				printf("\n");
 				continue;
 			}
@@ -788,10 +788,10 @@ void show_dev_detail(void)
 			for (i = 0; i < num_elements; i++) {
 				gvar = g_variant_get_child_value(gvar_list, i);
 				g_variant_get(gvar, "(tt)", &p, &q);
-				if (srci->datatype == SR_T_RATIONAL_PERIOD)
-					s = sr_period_string(p, q);
+				if (srci->datatype == OTC_T_RATIONAL_PERIOD)
+					s = otc_period_string(p, q);
 				else
-					s = sr_voltage_string(p, q);
+					s = otc_voltage_string(p, q);
 				printf("      %s", s);
 				g_free(s);
 				if (p == cur_p && q == cur_q)
@@ -800,10 +800,10 @@ void show_dev_detail(void)
 			}
 			g_variant_unref(gvar_list);
 
-		} else if (srci->datatype == SR_T_MQ) {
+		} else if (srci->datatype == OTC_T_MQ) {
 			printf("    %s: ", srci->id);
 			if (maybe_config_get(driver, sdi, channel_group, key,
-					&gvar) == SR_OK
+					&gvar) == OTC_OK
 					&& g_variant_is_of_type(gvar, G_VARIANT_TYPE_TUPLE)
 					&& g_variant_n_children(gvar) == 2) {
 				g_variant_get(gvar, "(ut)", &cur_mq, &cur_mqflags);
@@ -812,7 +812,7 @@ void show_dev_detail(void)
 				cur_mq = cur_mqflags = 0;
 
 			if (maybe_config_list(driver, sdi, channel_group,
-					key, &gvar_list) != SR_OK) {
+					key, &gvar_list) != OTC_OK) {
 				printf("\n");
 				continue;
 			}
@@ -822,14 +822,14 @@ void show_dev_detail(void)
 				printf("      ");
 				gvar = g_variant_get_child_value(gvar_list, i);
 				g_variant_get(gvar, "(ut)", &mq, &mqflags);
-				if ((srmqi = sr_key_info_get(SR_KEY_MQ, mq)))
+				if ((srmqi = otc_key_info_get(OTC_KEY_MQ, mq)))
 					printf("%s", srmqi->id);
 				else
 					printf("%d", mq);
 				for (j = 0, mask = 1; j < 32; j++, mask <<= 1) {
 					if (!(mqflags & mask))
 						continue;
-					if ((srmqfi = sr_key_info_get(SR_KEY_MQFLAGS, mqflags & mask)))
+					if ((srmqfi = otc_key_info_get(OTC_KEY_MQFLAGS, mqflags & mask)))
 						printf("/%s", srmqfi->id);
 					else
 						printf("/%" PRIu64, mqflags & mask);
@@ -848,7 +848,7 @@ void show_dev_detail(void)
 	}
 	g_array_free(opts, TRUE);
 
-	sr_dev_close(sdi);
+	otc_dev_close(sdi);
 
 }
 
@@ -995,20 +995,20 @@ void show_pd_detail(void)
 
 void show_input(void)
 {
-	const struct sr_input_module *imod;
-	const struct sr_option **opts;
+	const struct otc_input_module *imod;
+	const struct otc_option **opts;
 	GSList *l;
 	int i;
 	char *s, **tok;
 
 	tok = g_strsplit(opt_input_format, ":", 0);
-	if (!tok[0] || !(imod = sr_input_find(tok[0])))
+	if (!tok[0] || !(imod = otc_input_find(tok[0])))
 		g_critical("Input module '%s' not found.", opt_input_format);
 
-	printf("ID: %s\nName: %s\n", sr_input_id_get(imod),
-			sr_input_name_get(imod));
-	printf("Description: %s\n", sr_input_description_get(imod));
-	if ((opts = sr_input_options_get(imod))) {
+	printf("ID: %s\nName: %s\n", otc_input_id_get(imod),
+			otc_input_name_get(imod));
+	printf("Description: %s\n", otc_input_description_get(imod));
+	if ((opts = otc_input_options_get(imod))) {
 		printf("Options:\n");
 		for (i = 0; opts[i]; i++) {
 			printf("  %s: %s", opts[i]->id, opts[i]->desc);
@@ -1028,27 +1028,27 @@ void show_input(void)
 			}
 			printf("\n");
 		}
-		sr_input_options_free(opts);
+		otc_input_options_free(opts);
 	}
 	g_strfreev(tok);
 }
 
 void show_output(void)
 {
-	const struct sr_output_module *omod;
-	const struct sr_option **opts;
+	const struct otc_output_module *omod;
+	const struct otc_option **opts;
 	GSList *l;
 	int i;
 	char *s, **tok;
 
 	tok = g_strsplit(opt_output_format, ":", 0);
-	if (!tok[0] || !(omod = sr_output_find(tok[0])))
+	if (!tok[0] || !(omod = otc_output_find(tok[0])))
 		g_critical("Output module '%s' not found.", opt_output_format);
 
-	printf("ID: %s\nName: %s\n", sr_output_id_get(omod),
-			sr_output_name_get(omod));
-	printf("Description: %s\n", sr_output_description_get(omod));
-	if ((opts = sr_output_options_get(omod))) {
+	printf("ID: %s\nName: %s\n", otc_output_id_get(omod),
+			otc_output_name_get(omod));
+	printf("Description: %s\n", otc_output_description_get(omod));
+	if ((opts = otc_output_options_get(omod))) {
 		printf("Options:\n");
 		for (i = 0; opts[i]; i++) {
 			printf("  %s: %s", opts[i]->id, opts[i]->desc);
@@ -1068,27 +1068,27 @@ void show_output(void)
 			}
 			printf("\n");
 		}
-		sr_output_options_free(opts);
+		otc_output_options_free(opts);
 	}
 	g_strfreev(tok);
 }
 
 void show_transform(void)
 {
-	const struct sr_transform_module *tmod;
-	const struct sr_option **opts;
+	const struct otc_transform_module *tmod;
+	const struct otc_option **opts;
 	GSList *l;
 	int i;
 	char *s, **tok;
 
 	tok = g_strsplit(opt_transform_module, ":", 0);
-	if (!tok[0] || !(tmod = sr_transform_find(tok[0])))
+	if (!tok[0] || !(tmod = otc_transform_find(tok[0])))
 		g_critical("Transform module '%s' not found.", opt_transform_module);
 
-	printf("ID: %s\nName: %s\n", sr_transform_id_get(tmod),
-			sr_transform_name_get(tmod));
-	printf("Description: %s\n", sr_transform_description_get(tmod));
-	if ((opts = sr_transform_options_get(tmod))) {
+	printf("ID: %s\nName: %s\n", otc_transform_id_get(tmod),
+			otc_transform_name_get(tmod));
+	printf("Description: %s\n", otc_transform_description_get(tmod));
+	if ((opts = otc_transform_options_get(tmod))) {
 		printf("Options:\n");
 		for (i = 0; opts[i]; i++) {
 			printf("  %s: %s", opts[i]->id, opts[i]->desc);
@@ -1108,14 +1108,14 @@ void show_transform(void)
 			}
 			printf("\n");
 		}
-		sr_transform_options_free(opts);
+		otc_transform_options_free(opts);
 	}
 	g_strfreev(tok);
 }
 
 static void print_serial_port(gpointer data, gpointer user_data)
 {
-	struct sr_serial_port *port;
+	struct otc_serial_port *port;
 
 	port = (void *)data;
 	(void)user_data;
@@ -1126,11 +1126,11 @@ void show_serial_ports(void)
 {
 	GSList *serial_ports;
 
-	serial_ports = sr_serial_list(NULL);
+	serial_ports = otc_serial_list(NULL);
 	if (!serial_ports)
 		return;
 
 	printf("Available serial/HID/BT/BLE ports:\n");
 	g_slist_foreach(serial_ports, print_serial_port, NULL);
-	g_slist_free_full(serial_ports, (GDestroyNotify)sr_serial_free);
+	g_slist_free_full(serial_ports, (GDestroyNotify)otc_serial_free);
 }

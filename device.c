@@ -1,5 +1,5 @@
 /*
- * This file is part of the sigrok-cli project.
+ * This file is part of the opentrace-cli project.
  *
  * Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
  *
@@ -20,9 +20,9 @@
 #include <config.h>
 #include <glib.h>
 #include <string.h>
-#include "sigrok-cli.h"
+#include "opentrace-cli.h"
 
-static void free_drvopts(struct sr_config *src)
+static void free_drvopts(struct otc_config *src)
 {
 	g_variant_unref(src->data);
 	g_free(src);
@@ -30,7 +30,7 @@ static void free_drvopts(struct sr_config *src)
 
 GSList *device_scan(void)
 {
-	struct sr_dev_driver **drivers, *driver;
+	struct otc_dev_driver **drivers, *driver;
 	GSList *drvopts, *devices, *tmpdevs, *l;
 	int i;
 
@@ -38,7 +38,7 @@ GSList *device_scan(void)
 		/* Caller specified driver. Use it. Only this one. */
 		if (!parse_driver(opt_drv, &driver, &drvopts))
 			return NULL;
-		devices = sr_driver_scan(driver, drvopts);
+		devices = otc_driver_scan(driver, drvopts);
 		g_slist_free_full(drvopts, (GDestroyNotify)free_drvopts);
 	} else if (opt_dont_scan) {
 		/* No -d choice, and -D "don't scan" requested. Do nothing. */
@@ -46,14 +46,14 @@ GSList *device_scan(void)
 	} else {
 		/* No driver specified. Scan all available drivers. */
 		devices = NULL;
-		drivers = sr_driver_list(sr_ctx);
+		drivers = otc_driver_list(otc_ctx);
 		for (i = 0; drivers[i]; i++) {
 			driver = drivers[i];
-			if (sr_driver_init(sr_ctx, driver) != SR_OK) {
+			if (otc_driver_init(otc_ctx, driver) != OTC_OK) {
 				g_critical("Failed to initialize driver.");
 				return NULL;
 			}
-			tmpdevs = sr_driver_scan(driver, NULL);
+			tmpdevs = otc_driver_scan(driver, NULL);
 			for (l = tmpdevs; l; l = l->next)
 				devices = g_slist_append(devices, l->data);
 			g_slist_free(tmpdevs);
@@ -80,10 +80,10 @@ GSList *device_scan(void)
  *
  * @returns The channel group, or #NULL for failed lookup.
  */
-struct sr_channel_group *lookup_channel_group(struct sr_dev_inst *sdi,
+struct otc_channel_group *lookup_channel_group(struct otc_dev_inst *sdi,
 	const char *cg_name)
 {
-	struct sr_channel_group *cg;
+	struct otc_channel_group *cg;
 	GSList *l, *channel_groups;
 
 	if (!cg_name)
@@ -93,7 +93,7 @@ struct sr_channel_group *lookup_channel_group(struct sr_dev_inst *sdi,
 	if (!cg_name || !*cg_name)
 		return NULL;
 
-	channel_groups = sr_dev_inst_channel_groups_get(sdi);
+	channel_groups = otc_dev_inst_channel_groups_get(sdi);
 	if (!channel_groups) {
 		g_critical("This device does not have any channel groups.");
 		return NULL;

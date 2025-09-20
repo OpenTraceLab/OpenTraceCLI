@@ -1,5 +1,5 @@
 /*
- * This file is part of the sigrok-cli project.
+ * This file is part of the opentrace-cli project.
  *
  * Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
  *
@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
-#include "sigrok-cli.h"
+#include "opentrace-cli.h"
 
 #ifdef HAVE_SRD
 static GHashTable *pd_ann_visible = NULL;
@@ -256,7 +256,7 @@ static void map_pd_inst_channels(void *key, void *value, void *user_data)
 	GVariant *var;
 	void *channel_id;
 	void *channel_target;
-	struct sr_channel *ch;
+	struct otc_channel *ch;
 	GHashTableIter iter;
 
 	channel_map = value;
@@ -297,11 +297,11 @@ static void map_pd_inst_channels(void *key, void *value, void *user_data)
 	g_hash_table_destroy(channel_indices);
 }
 
-void map_pd_channels(struct sr_dev_inst *sdi)
+void map_pd_channels(struct otc_dev_inst *sdi)
 {
 	GSList *channels;
 
-	channels = sr_dev_inst_channels_get(sdi);
+	channels = otc_dev_inst_channels_get(sdi);
 
 	if (pd_channel_maps) {
 		g_hash_table_foreach(pd_channel_maps, &map_pd_inst_channels,
@@ -674,13 +674,13 @@ void show_pd_annotations(struct srd_proto_data *pdata, void *cb_data)
 	 *   recipients might have to deal with a set of text variants.
 	 */
 	show_snum = show_class = show_quotes = show_abbrev = FALSE;
-	if (opt_pd_samplenum || opt_loglevel > SR_LOG_WARN) {
+	if (opt_pd_samplenum || opt_loglevel > OTC_LOG_WARN) {
 		show_snum = TRUE;
 	}
-	if (opt_loglevel > SR_LOG_WARN) {
+	if (opt_loglevel > OTC_LOG_WARN) {
 		show_quotes = TRUE;
 	}
-	if (opt_loglevel > SR_LOG_INFO) {
+	if (opt_loglevel > OTC_LOG_INFO) {
 		show_class = TRUE;
 		show_abbrev = TRUE;
 	}
@@ -717,7 +717,7 @@ void show_pd_meta(struct srd_proto_data *pdata, void *cb_data)
 		/* Not in the list of PDs whose meta output we're showing. */
 		return;
 
-	if (opt_pd_samplenum || opt_loglevel > SR_LOG_WARN)
+	if (opt_pd_samplenum || opt_loglevel > OTC_LOG_WARN)
 		printf("%"PRIu64"-%"PRIu64" ", pdata->start_sample, pdata->end_sample);
 	printf("%s: ", pdata->pdo->proto_id);
 	printf("%s: %s", pdata->pdo->meta_name, g_variant_print(pdata->data, FALSE));

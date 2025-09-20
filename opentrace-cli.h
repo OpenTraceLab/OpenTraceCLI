@@ -1,5 +1,5 @@
 /*
- * This file is part of the sigrok-cli project.
+ * This file is part of the opentrace-cli project.
  *
  * Copyright (C) 2011 Bert Vermeulen <bert@biot.com>
  *
@@ -17,29 +17,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SIGROK_CLI_SIGROK_CLI_H
-#define SIGROK_CLI_SIGROK_CLI_H
+#ifndef OPENTRACE_CLI_OPENTRACE_CLI_H
+#define OPENTRACE_CLI_OPENTRACE_CLI_H
 
 #ifdef HAVE_SRD
 /* First, so we avoid a _POSIX_C_SOURCE warning. */
-#include <libsigrokdecode/libsigrokdecode.h>
+#include <libopentracedecode/libopentracedecode.h>
 #endif
-#include <libsigrok/libsigrok.h>
+#include <libopentrace/libopentrace.h>
 
 #define DEFAULT_OUTPUT_FORMAT_FILE "srzip"
 #define DEFAULT_OUTPUT_FORMAT_NOFILE "bits:width=64"
 
 /* main.c */
-extern struct sr_context *sr_ctx;
-int select_channels(struct sr_dev_inst *sdi);
-int maybe_config_get(struct sr_dev_driver *driver,
-		const struct sr_dev_inst *sdi, struct sr_channel_group *cg,
+extern struct otc_context *otc_ctx;
+int select_channels(struct otc_dev_inst *sdi);
+int maybe_config_get(struct otc_dev_driver *driver,
+		const struct otc_dev_inst *sdi, struct otc_channel_group *cg,
 		uint32_t key, GVariant **gvar);
-int maybe_config_set(struct sr_dev_driver *driver,
-		const struct sr_dev_inst *sdi, struct sr_channel_group *cg,
+int maybe_config_set(struct otc_dev_driver *driver,
+		const struct otc_dev_inst *sdi, struct otc_channel_group *cg,
 		uint32_t key, GVariant *gvar);
-int maybe_config_list(struct sr_dev_driver *driver,
-		const struct sr_dev_inst *sdi, struct sr_channel_group *cg,
+int maybe_config_list(struct otc_dev_driver *driver,
+		const struct otc_dev_inst *sdi, struct otc_channel_group *cg,
 		uint32_t key, GVariant **gvar);
 
 /* show.c */
@@ -56,17 +56,17 @@ void show_serial_ports(void);
 
 /* device.c */
 GSList *device_scan(void);
-struct sr_channel_group *lookup_channel_group(struct sr_dev_inst *sdi,
+struct otc_channel_group *lookup_channel_group(struct otc_dev_inst *sdi,
 	const char *cg_name);
 
 /* session.c */
 struct df_arg_desc {
-	struct sr_session *session;
+	struct otc_session *session;
 	int do_props;
 	struct input_stream_props {
 		uint64_t samplerate;
 		GSList *channels;
-		const struct sr_channel *first_analog_channel;
+		const struct otc_channel *first_analog_channel;
 		size_t unitsize;
 		uint64_t sample_count_logic;
 		uint64_t sample_count_analog;
@@ -74,11 +74,11 @@ struct df_arg_desc {
 		uint64_t triggered;
 	} props;
 };
-void datafeed_in(const struct sr_dev_inst *sdi,
-		const struct sr_datafeed_packet *packet, void *cb_data);
-int opt_to_gvar(char *key, char *value, struct sr_config *src);
-int set_dev_options_array(struct sr_dev_inst *sdi, char **opts);
-int set_dev_options(struct sr_dev_inst *sdi, GHashTable *args);
+void datafeed_in(const struct otc_dev_inst *sdi,
+		const struct otc_datafeed_packet *packet, void *cb_data);
+int opt_to_gvar(char *key, char *value, struct otc_config *src);
+int set_dev_options_array(struct otc_dev_inst *sdi, char **opts);
+int set_dev_options(struct otc_dev_inst *sdi, GHashTable *args);
 void run_session(void);
 
 /* input.c */
@@ -99,25 +99,25 @@ void show_pd_meta(struct srd_proto_data *pdata, void *cb_data);
 void show_pd_binary(struct srd_proto_data *pdata, void *cb_data);
 void show_pd_prepare(void);
 void show_pd_close(void);
-void map_pd_channels(struct sr_dev_inst *sdi);
+void map_pd_channels(struct otc_dev_inst *sdi);
 #endif
 
 /* parsers.c */
-struct sr_channel *find_channel(GSList *channellist, const char *channelname);
-GSList *parse_channelstring(struct sr_dev_inst *sdi, const char *channelstring);
-int parse_triggerstring(const struct sr_dev_inst *sdi, const char *s,
-		struct sr_trigger **trigger);
+struct otc_channel *find_channel(GSList *channellist, const char *channelname);
+GSList *parse_channelstring(struct otc_dev_inst *sdi, const char *channelstring);
+int parse_triggerstring(const struct otc_dev_inst *sdi, const char *s,
+		struct otc_trigger **trigger);
 GHashTable *parse_generic_arg(const char *arg,
 		gboolean sep_first, const char *key_first);
-GHashTable *generic_arg_to_opt(const struct sr_option **opts, GHashTable *genargs);
-GSList *check_unknown_keys(const struct sr_option **avail, GHashTable *used);
-gboolean warn_unknown_keys(const struct sr_option **avail, GHashTable *used,
+GHashTable *generic_arg_to_opt(const struct otc_option **opts, GHashTable *genargs);
+GSList *check_unknown_keys(const struct otc_option **avail, GHashTable *used);
+gboolean warn_unknown_keys(const struct otc_option **avail, GHashTable *used,
 		const char *caption);
 int canon_cmp(const char *str1, const char *str2);
-int parse_driver(char *arg, struct sr_dev_driver **driver, GSList **drvopts);
+int parse_driver(char *arg, struct otc_dev_driver **driver, GSList **drvopts);
 
 /* anykey.c */
-void add_anykey(struct sr_session *session);
+void add_anykey(struct otc_session *session);
 void clear_anykey(void);
 
 /* options.c */

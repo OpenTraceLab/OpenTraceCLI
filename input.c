@@ -1,5 +1,5 @@
 /*
- * This file is part of the sigrok-cli project.
+ * This file is part of the opentrace-cli project.
  *
  * Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
  *
@@ -26,17 +26,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
-#include "sigrok-cli.h"
+#include "opentrace-cli.h"
 
 #define CHUNK_SIZE (4 * 1024 * 1024)
 
 static void load_input_file_module(struct df_arg_desc *df_arg)
 {
-	struct sr_session *session;
-	const struct sr_input *in;
-	const struct sr_input_module *imod;
-	const struct sr_option **options;
-	struct sr_dev_inst *sdi;
+	struct otc_session *session;
+	const struct otc_input *in;
+	const struct otc_input_module *imod;
+	const struct otc_option **options;
+	struct otc_dev_inst *sdi;
 	GHashTable *mod_args, *mod_opts;
 	GString *buf;
 	gboolean got_sdi;
@@ -45,7 +45,7 @@ static void load_input_file_module(struct df_arg_desc *df_arg)
 	char *mod_id;
 	gboolean is_stdin;
 
-	if (!sr_input_list())
+	if (!otc_input_list())
 		g_critical("No supported input formats available.");
 
 	mod_id = NULL;
@@ -60,17 +60,17 @@ static void load_input_file_module(struct df_arg_desc *df_arg)
 	buf = g_string_sized_new(CHUNK_SIZE);
 	if (mod_id) {
 		/* User specified an input module to use. */
-		if (!(imod = sr_input_find(mod_id)))
+		if (!(imod = otc_input_find(mod_id)))
 			g_critical("Error: unknown input module '%s'.", mod_id);
 		g_hash_table_remove(mod_args, "sigrok_key");
-		if ((options = sr_input_options_get(imod))) {
+		if ((options = otc_input_options_get(imod))) {
 			mod_opts = generic_arg_to_opt(options, mod_args);
 			(void)warn_unknown_keys(options, mod_args, NULL);
-			sr_output_options_free(options);
+			otc_output_options_free(options);
 		} else {
 			mod_opts = NULL;
 		}
-		if (!(in = sr_input_new(imod, mod_opts)))
+		if (!(in = otc_input_new(imod, mod_opts)))
 			g_critical("Error: failed to initialize input module.");
 		if (mod_opts)
 			g_hash_table_destroy(mod_opts);
@@ -85,7 +85,7 @@ static void load_input_file_module(struct df_arg_desc *df_arg)
 			 * An actual filename: let the input modules try to
 			 * identify the file.
 			 */
-			if (sr_input_scan_file(opt_input_file, &in) == SR_OK) {
+			if (otc_input_scan_file(opt_input_file, &in) == OTC_OK) {
 				/* That worked, reopen the file for reading. */
 				fd = open(opt_input_file, O_RDONLY);
 			}
@@ -107,14 +107,14 @@ static void load_input_file_module(struct df_arg_desc *df_arg)
 				g_critical("Failed to read %s: %s.", opt_input_file,
 						g_strerror(errno));
 			buf->len = len;
-			sr_input_scan_buffer(buf, &in);
+			otc_input_scan_buffer(buf, &in);
 		}
 		if (!in)
 			g_critical("Error: no input module found for this file.");
 	}
-	sr_session_new(sr_ctx, &session);
+	otc_session_new(otc_ctx, &session);
 	df_arg->session = session;
-	sr_session_datafeed_callback_add(session, datafeed_in, df_arg);
+	otc_session_datafeed_callback_add(session, datafeed_in, df_arg);
 
 	got_sdi = FALSE;
 	while (TRUE) {
@@ -126,36 +126,36 @@ static void load_input_file_module(struct df_arg_desc *df_arg)
 			/* End of file or stream. */
 			break;
 		buf->len = len;
-		if (sr_input_send(in, buf) != SR_OK)
+		if (otc_input_send(in, buf) != OTC_OK)
 			break;
 
-		sdi = sr_input_dev_inst_get(in);
+		sdi = otc_input_dev_inst_get(in);
 		if (!got_sdi && sdi) {
 			/* First time we got a valid sdi. */
-			if (select_channels(sdi) != SR_OK)
+			if (select_channels(sdi) != OTC_OK)
 				return;
-			if (sr_session_dev_add(session, sdi) != SR_OK) {
+			if (otc_session_dev_add(session, sdi) != OTC_OK) {
 				g_critical("Failed to use device.");
-				sr_session_destroy(session);
+				otc_session_destroy(session);
 				return;
 			}
 			got_sdi = TRUE;
 		}
 	}
-	sr_input_end(in);
-	sr_input_free(in);
+	otc_input_end(in);
+	otc_input_free(in);
 	g_string_free(buf, TRUE);
 
 	df_arg->session = NULL;
-	sr_session_destroy(session);
+	otc_session_destroy(session);
 
 }
 
 void load_input_file(gboolean do_props)
 {
 	struct df_arg_desc df_arg;
-	struct sr_session *session;
-	struct sr_dev_inst *sdi;
+	struct otc_session *session;
+	struct otc_dev_inst *sdi;
 	GSList *devices;
 	GMainLoop *main_loop;
 	int ret;
@@ -167,37 +167,37 @@ void load_input_file(gboolean do_props)
 		/* Input from stdin is never a session file. */
 		load_input_file_module(&df_arg);
 	} else {
-		if ((ret = sr_session_load(sr_ctx, opt_input_file,
-				&session)) == SR_OK) {
+		if ((ret = otc_session_load(otc_ctx, opt_input_file,
+				&session)) == OTC_OK) {
 			/* sigrok session file */
-			ret = sr_session_dev_list(session, &devices);
-			if (ret != SR_OK || !devices || !devices->data) {
+			ret = otc_session_dev_list(session, &devices);
+			if (ret != OTC_OK || !devices || !devices->data) {
 				g_critical("Failed to access session device.");
 				g_slist_free(devices);
-				sr_session_destroy(session);
+				otc_session_destroy(session);
 				return;
 			}
 			sdi = devices->data;
 			g_slist_free(devices);
-			if (select_channels(sdi) != SR_OK) {
-				sr_session_destroy(session);
+			if (select_channels(sdi) != OTC_OK) {
+				otc_session_destroy(session);
 				return;
 			}
 			main_loop = g_main_loop_new(NULL, FALSE);
 
 			df_arg.session = session;
-			sr_session_datafeed_callback_add(session,
+			otc_session_datafeed_callback_add(session,
 				datafeed_in, &df_arg);
-			sr_session_stopped_callback_set(session,
-				(sr_session_stopped_callback)g_main_loop_quit,
+			otc_session_stopped_callback_set(session,
+				(otc_session_stopped_callback)g_main_loop_quit,
 				main_loop);
-			if (sr_session_start(session) == SR_OK)
+			if (otc_session_start(session) == OTC_OK)
 				g_main_loop_run(main_loop);
 
 			g_main_loop_unref(main_loop);
 			df_arg.session = NULL;
-			sr_session_destroy(session);
-		} else if (ret != SR_ERR) {
+			otc_session_destroy(session);
+		} else if (ret != OTC_ERR) {
 			/* It's a session file, but it didn't work out somehow. */
 			g_critical("Failed to load session file.");
 		} else {

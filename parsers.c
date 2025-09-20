@@ -1,5 +1,5 @@
 /*
- * This file is part of the sigrok-cli project.
+ * This file is part of the opentrace-cli project.
  *
  * Copyright (C) 2011 Bert Vermeulen <bert@biot.com>
  *
@@ -23,11 +23,11 @@
 #include <stdint.h>
 #include <string.h>
 #include <glib.h>
-#include "sigrok-cli.h"
+#include "opentrace-cli.h"
 
-struct sr_channel *find_channel(GSList *channellist, const char *channelname)
+struct otc_channel *find_channel(GSList *channellist, const char *channelname)
 {
-	struct sr_channel *ch;
+	struct otc_channel *ch;
 	GSList *l;
 
 	ch = NULL;
@@ -41,20 +41,20 @@ struct sr_channel *find_channel(GSList *channellist, const char *channelname)
 	return ch;
 }
 
-GSList *parse_channelstring(struct sr_dev_inst *sdi, const char *channelstring)
+GSList *parse_channelstring(struct otc_dev_inst *sdi, const char *channelstring)
 {
-	struct sr_channel *ch;
+	struct otc_channel *ch;
 	GSList *channellist, *channels;
 	int ret, n, b, e, i;
 	char **tokens, **range, **names, *eptr, str[8];
 
-	channels = sr_dev_inst_channels_get(sdi);
+	channels = otc_dev_inst_channels_get(sdi);
 
 	if (!channelstring || !channelstring[0])
 		/* Use all channels by default. */
 		return g_slist_copy(channels);
 
-	ret = SR_OK;
+	ret = OTC_OK;
 	range = NULL;
 	names = NULL;
 	channellist = NULL;
@@ -62,7 +62,7 @@ GSList *parse_channelstring(struct sr_dev_inst *sdi, const char *channelstring)
 	for (i = 0; tokens[i]; i++) {
 		if (tokens[i][0] == '\0') {
 			g_critical("Invalid empty channel.");
-			ret = SR_ERR;
+			ret = OTC_ERR;
 			break;
 		}
 		if (strchr(tokens[i], '-')) {
@@ -76,25 +76,25 @@ GSList *parse_channelstring(struct sr_dev_inst *sdi, const char *channelstring)
 			if (!range[0] || !range[1] || range[2]) {
 				/* Need exactly two arguments. */
 				g_critical("Invalid channel syntax '%s'.", tokens[i]);
-				ret = SR_ERR;
+				ret = OTC_ERR;
 				goto range_fail;
 			}
 
 			b = strtol(range[0], &eptr, 10);
 			if (eptr == range[0] || *eptr != '\0') {
 				g_critical("Invalid channel '%s'.", range[0]);
-				ret = SR_ERR;
+				ret = OTC_ERR;
 				goto range_fail;
 			}
 			e = strtol(range[1], NULL, 10);
 			if (eptr == range[1] || *eptr != '\0') {
 				g_critical("Invalid channel '%s'.", range[1]);
-				ret = SR_ERR;
+				ret = OTC_ERR;
 				goto range_fail;
 			}
 			if (b < 0 || b >= e) {
 				g_critical("Invalid channel range '%s'.", tokens[i]);
-				ret = SR_ERR;
+				ret = OTC_ERR;
 				goto range_fail;
 			}
 
@@ -102,13 +102,13 @@ GSList *parse_channelstring(struct sr_dev_inst *sdi, const char *channelstring)
 				n = snprintf(str, 8, "%d", b);
 				if (n < 0 || n > 8) {
 					g_critical("Invalid channel '%d'.", b);
-					ret = SR_ERR;
+					ret = OTC_ERR;
 					break;
 				}
 				ch = find_channel(channels, str);
 				if (!ch) {
 					g_critical("unknown channel '%d'.", b);
-					ret = SR_ERR;
+					ret = OTC_ERR;
 					break;
 				}
 				channellist = g_slist_append(channellist, ch);
@@ -118,7 +118,7 @@ range_fail:
 			if (range)
 				g_strfreev(range);
 
-			if (ret != SR_OK)
+			if (ret != OTC_OK)
 				break;
 		} else {
 			names = g_strsplit(tokens[i], "=", 2);
@@ -126,7 +126,7 @@ range_fail:
 				/* Need one or two arguments. */
 				g_critical("Invalid channel '%s'.", tokens[i]);
 				g_strfreev(names);
-				ret = SR_ERR;
+				ret = OTC_ERR;
 				break;
 			}
 
@@ -134,7 +134,7 @@ range_fail:
 			if (!ch) {
 				g_critical("unknown channel '%s'.", names[0]);
 				g_strfreev(names);
-				ret = SR_ERR;
+				ret = OTC_ERR;
 				break;
 			}
 			if (names[1]) {
@@ -148,7 +148,7 @@ range_fail:
 		}
 	}
 
-	if (ret != SR_OK) {
+	if (ret != OTC_OK) {
 		g_slist_free(channellist);
 		channellist = NULL;
 	}
@@ -163,30 +163,30 @@ int parse_trigger_match(char c)
 	int match;
 
 	if (c == '0')
-		match = SR_TRIGGER_ZERO;
+		match = OTC_TRIGGER_ZERO;
 	else if (c == '1')
-		match = SR_TRIGGER_ONE;
+		match = OTC_TRIGGER_ONE;
 	else if (c == 'r')
-		match = SR_TRIGGER_RISING;
+		match = OTC_TRIGGER_RISING;
 	else if (c == 'f')
-		match = SR_TRIGGER_FALLING;
+		match = OTC_TRIGGER_FALLING;
 	else if (c == 'e')
-		match = SR_TRIGGER_EDGE;
+		match = OTC_TRIGGER_EDGE;
 	else if (c == 'o')
-		match = SR_TRIGGER_OVER;
+		match = OTC_TRIGGER_OVER;
 	else if (c == 'u')
-		match = SR_TRIGGER_UNDER;
+		match = OTC_TRIGGER_UNDER;
 	else
 		match = 0;
 
 	return match;
 }
 
-int parse_triggerstring(const struct sr_dev_inst *sdi, const char *s,
-		struct sr_trigger **trigger)
+int parse_triggerstring(const struct otc_dev_inst *sdi, const char *s,
+		struct otc_trigger **trigger)
 {
-	struct sr_channel *ch;
-	struct sr_trigger_stage *stage;
+	struct otc_channel *ch;
+	struct otc_trigger_stage *stage;
 	GVariant *gvar;
 	GSList *l, *channels;
 	gsize num_matches;
@@ -196,19 +196,19 @@ int parse_triggerstring(const struct sr_dev_inst *sdi, const char *s,
 	unsigned int j;
 	int t, i;
 	char **tokens, *sep;
-	struct sr_dev_driver *driver;
+	struct otc_dev_driver *driver;
 
-	driver = sr_dev_inst_driver_get(sdi);
-	channels = sr_dev_inst_channels_get(sdi);
+	driver = otc_dev_inst_driver_get(sdi);
+	channels = otc_dev_inst_channels_get(sdi);
 
-	if (maybe_config_list(driver, sdi, NULL, SR_CONF_TRIGGER_MATCH,
-			&gvar) != SR_OK) {
+	if (maybe_config_list(driver, sdi, NULL, OTC_CONF_TRIGGER_MATCH,
+			&gvar) != OTC_OK) {
 		g_critical("Device doesn't support any triggers.");
 		return FALSE;
 	}
 	matches = g_variant_get_fixed_array(gvar, &num_matches, sizeof(int32_t));
 
-	*trigger = sr_trigger_new(NULL);
+	*trigger = otc_trigger_new(NULL);
 	error = FALSE;
 	tokens = g_strsplit(s, ",", -1);
 	for (i = 0; tokens[i]; i++) {
@@ -251,8 +251,8 @@ int parse_triggerstring(const struct sr_dev_inst *sdi, const char *s,
 			/* Make sure this ends up in the right stage, creating
 			 * them as needed. */
 			while (!(stage = g_slist_nth_data((*trigger)->stages, t)))
-				sr_trigger_stage_add(*trigger);
-			if (sr_trigger_match_add(stage, ch, match, 0) != SR_OK) {
+				otc_trigger_stage_add(*trigger);
+			if (otc_trigger_match_add(stage, ch, match, 0) != OTC_OK) {
 				error = TRUE;
 				break;
 			}
@@ -262,7 +262,7 @@ int parse_triggerstring(const struct sr_dev_inst *sdi, const char *s,
 	g_variant_unref(gvar);
 
 	if (error)
-		sr_trigger_free(*trigger);
+		otc_trigger_free(*trigger);
 
 	return !error;
 }
@@ -375,7 +375,7 @@ GHashTable *parse_generic_arg(const char *arg,
 	return hash;
 }
 
-GSList *check_unknown_keys(const struct sr_option **avail, GHashTable *used)
+GSList *check_unknown_keys(const struct otc_option **avail, GHashTable *used)
 {
 	GSList *unknown;
 	GHashTableIter iter;
@@ -405,7 +405,7 @@ GSList *check_unknown_keys(const struct sr_option **avail, GHashTable *used)
 	return unknown;
 }
 
-gboolean warn_unknown_keys(const struct sr_option **avail, GHashTable *used,
+gboolean warn_unknown_keys(const struct otc_option **avail, GHashTable *used,
 	const char *caption)
 {
 	GSList *unknown, *l;
@@ -426,7 +426,7 @@ gboolean warn_unknown_keys(const struct sr_option **avail, GHashTable *used,
 	return had_unknown;
 }
 
-GHashTable *generic_arg_to_opt(const struct sr_option **opts, GHashTable *genargs)
+GHashTable *generic_arg_to_opt(const struct otc_option **opts, GHashTable *genargs)
 {
 	GHashTable *hash;
 	GVariant *gvar;
@@ -509,10 +509,10 @@ int canon_cmp(const char *str1, const char *str2)
 	return ret;
 }
 
-/* Convert driver options hash to GSList of struct sr_config. */
+/* Convert driver options hash to GSList of struct otc_config. */
 static GSList *hash_to_hwopt(GHashTable *hash)
 {
-	struct sr_config *src;
+	struct otc_config *src;
 	GList *gl, *keys;
 	GSList *opts;
 	char *key;
@@ -521,7 +521,7 @@ static GSList *hash_to_hwopt(GHashTable *hash)
 	opts = NULL;
 	for (gl = keys; gl; gl = gl->next) {
 		key = gl->data;
-		src = g_malloc(sizeof(struct sr_config));
+		src = g_malloc(sizeof(struct otc_config));
 		if (opt_to_gvar(key, g_hash_table_lookup(hash, key), src) != 0)
 			return NULL;
 		opts = g_slist_append(opts, src);
@@ -531,9 +531,9 @@ static GSList *hash_to_hwopt(GHashTable *hash)
 	return opts;
 }
 
-int parse_driver(char *arg, struct sr_dev_driver **driver, GSList **drvopts)
+int parse_driver(char *arg, struct otc_dev_driver **driver, GSList **drvopts)
 {
-	struct sr_dev_driver **drivers;
+	struct otc_dev_driver **drivers;
 	GHashTable *drvargs;
 	int i;
 	char *drvname;
@@ -546,7 +546,7 @@ int parse_driver(char *arg, struct sr_dev_driver **driver, GSList **drvopts)
 	drvname = g_strdup(g_hash_table_lookup(drvargs, "sigrok_key"));
 	g_hash_table_remove(drvargs, "sigrok_key");
 	*driver = NULL;
-	drivers = sr_driver_list(sr_ctx);
+	drivers = otc_driver_list(otc_ctx);
 	for (i = 0; drivers[i]; i++) {
 		if (strcmp(drivers[i]->name, drvname))
 			continue;
@@ -559,7 +559,7 @@ int parse_driver(char *arg, struct sr_dev_driver **driver, GSList **drvopts)
 		return FALSE;
 	}
 	g_free(drvname);
-	if (sr_driver_init(sr_ctx, *driver) != SR_OK) {
+	if (otc_driver_init(otc_ctx, *driver) != OTC_OK) {
 		g_critical("Failed to initialize driver.");
 		g_hash_table_destroy(drvargs);
 		return FALSE;

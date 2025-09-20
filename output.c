@@ -1,5 +1,5 @@
 /*
- * This file is part of the sigrok-cli project.
+ * This file is part of the opentrace-cli project.
  *
  * Copyright (C) 2019 Devan Lai <devan.lai@gmail.com>
  *
@@ -25,7 +25,7 @@
 #endif
 
 #include <glib.h>
-#include "sigrok-cli.h"
+#include "opentrace-cli.h"
 
 /* Disable newline translation on stdout when outputting binary data. */
 int setup_binary_stdout(void)
