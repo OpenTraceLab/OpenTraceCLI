@@ -23,8 +23,8 @@
 #include "opentrace-cli.h"
 
 #define DECODERS_HAVE_TAGS \
-	((SRD_PACKAGE_VERSION_MAJOR > 0) || \
-	 (SRD_PACKAGE_VERSION_MAJOR == 0) && (SRD_PACKAGE_VERSION_MINOR > 5))
+	((OTD_PACKAGE_VERSION_MAJOR > 0) || \
+	 (OTD_PACKAGE_VERSION_MAJOR == 0) && (OTD_PACKAGE_VERSION_MINOR > 5))
 
 static gint sort_inputs(gconstpointer a, gconstpointer b)
 {
@@ -51,7 +51,7 @@ static gint sort_drivers(gconstpointer a, gconstpointer b)
 	return strcmp(sdda->name, sddb->name);
 }
 
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 static gint sort_pds(gconstpointer a, gconstpointer b)
 {
 	const struct srd_decoder *sda = a, *sdb = b;
@@ -98,9 +98,9 @@ void show_version(void)
 	printf("  - SCPI backends: %s.\n", str);
 	g_free(str);
 
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 	printf("- libopentracedecode %s/%s (rt: %s/%s).\n",
-		SRD_PACKAGE_VERSION_STRING, SRD_LIB_VERSION_STRING,
+		OTD_PACKAGE_VERSION_STRING, OTD_LIB_VERSION_STRING,
 		srd_package_version_string_get(), srd_lib_version_string_get());
 
 	s = g_string_sized_new(200);
@@ -133,7 +133,7 @@ void show_supported(void)
 	const GSList *l;
 	GSList *sl;
 	int i;
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 	struct srd_decoder *dec;
 #endif
 
@@ -188,8 +188,8 @@ void show_supported(void)
 	printf("\n");
 	g_slist_free(sl);
 
-#ifdef HAVE_SRD
-	if (srd_init(NULL) == SRD_OK) {
+#ifdef HAVE_OTD
+	if (srd_init(NULL) == OTD_OK) {
 		printf("Supported protocol decoders:\n");
 		srd_decoder_load_all();
 		sl = g_slist_copy((GSList *)srd_decoder_list());
@@ -210,14 +210,14 @@ void show_supported(void)
 
 void show_supported_wiki(void)
 {
-#ifndef HAVE_SRD
+#ifndef HAVE_OTD
 	printf("Error, libopentracedecode support not compiled in.");
 #else
 	const GSList *l;
 	GSList *sl;
 	struct srd_decoder *dec;
 
-	if (srd_init(NULL) != SRD_OK)
+	if (srd_init(NULL) != OTD_OK)
 		return;
 
 	srd_decoder_load_all();
@@ -852,7 +852,7 @@ void show_dev_detail(void)
 
 }
 
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 static void show_pd_detail_single(const char *pd)
 {
 	struct srd_decoder *dec;

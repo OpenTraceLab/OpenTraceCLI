@@ -23,7 +23,7 @@
 #include <glib.h>
 #include "opentrace-cli.h"
 
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 static GHashTable *pd_ann_visible = NULL;
 static GHashTable *pd_meta_visible = NULL;
 static GHashTable *pd_binary_visible = NULL;
@@ -146,7 +146,7 @@ static int register_pd(char *opt_pds, char *opt_pd_annotations)
 
 		pd_name = g_strdup(g_hash_table_lookup(pd_opthash, "sigrok_key"));
 		g_hash_table_remove(pd_opthash, "sigrok_key");
-		if (srd_decoder_load(pd_name) != SRD_OK) {
+		if (srd_decoder_load(pd_name) != OTD_OK) {
 			g_critical("Failed to load protocol decoder %s.", pd_name);
 			ret = 1;
 			break;
@@ -197,7 +197,7 @@ static int register_pd(char *opt_pds, char *opt_pd_annotations)
 					g_slist_append(NULL, GINT_TO_POINTER(-1)));
 		}
 		if (di_prior) {
-			if (srd_inst_stack(srd_sess, di_prior, di) != SRD_OK) {
+			if (srd_inst_stack(srd_sess, di_prior, di) != OTD_OK) {
 				g_critical("Failed to stack %s -> %s.",
 					di_prior->inst_id, di->inst_id);
 				ret = 1;

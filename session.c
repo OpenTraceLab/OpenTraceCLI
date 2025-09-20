@@ -27,7 +27,7 @@
 static uint64_t limit_samples = 0;
 static uint64_t limit_frames = 0;
 
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 extern struct srd_session *srd_sess;
 #endif
 
@@ -320,17 +320,17 @@ void datafeed_in(const struct otc_dev_inst *sdi,
 
 		rcvd_samples_logic = rcvd_samples_analog = 0;
 
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 		if (opt_pds) {
 			if (samplerate) {
-				if (srd_session_metadata_set(srd_sess, SRD_CONF_SAMPLERATE,
-						g_variant_new_uint64(samplerate)) != SRD_OK) {
+				if (srd_session_metadata_set(srd_sess, OTD_CONF_SAMPLERATE,
+						g_variant_new_uint64(samplerate)) != OTD_OK) {
 					g_critical("Failed to configure decode session.");
 					break;
 				}
 				pd_samplerate = samplerate;
 			}
-			if (srd_session_start(srd_sess) != SRD_OK) {
+			if (srd_session_start(srd_sess) != OTD_OK) {
 				g_critical("Failed to start decode session.");
 				break;
 			}
@@ -351,10 +351,10 @@ void datafeed_in(const struct otc_dev_inst *sdi,
 					props->samplerate = samplerate;
 					break;
 				}
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 				if (opt_pds) {
-					if (srd_session_metadata_set(srd_sess, SRD_CONF_SAMPLERATE,
-							g_variant_new_uint64(samplerate)) != SRD_OK) {
+					if (srd_session_metadata_set(srd_sess, OTD_CONF_SAMPLERATE,
+							g_variant_new_uint64(samplerate)) != OTD_OK) {
 						g_critical("Failed to pass samplerate to decoder.");
 					}
 					pd_samplerate = samplerate;
@@ -413,9 +413,9 @@ void datafeed_in(const struct otc_dev_inst *sdi,
 		input_len = (end_sample - rcvd_samples_logic) * logic->unitsize;
 
 		if (opt_pds) {
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 			if (srd_session_send(srd_sess, rcvd_samples_logic, end_sample,
-					logic->data, input_len, logic->unitsize) != SRD_OK)
+					logic->data, input_len, logic->unitsize) != OTD_OK)
 				otc_session_stop(session);
 #endif
 		}

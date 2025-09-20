@@ -23,7 +23,7 @@
 #include "opentrace-cli.h"
 
 struct otc_context *otc_ctx = NULL;
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 struct srd_session *srd_sess = NULL;
 #endif
 
@@ -68,7 +68,7 @@ int select_channels(struct otc_dev_inst *sdi)
 		}
 		g_slist_free(selected_channels);
 	}
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 	map_pd_channels(sdi);
 #endif
 	return OTC_OK;
@@ -243,20 +243,20 @@ int main(int argc, char **argv)
 	if (otc_init(&otc_ctx) != OTC_OK)
 		goto done;
 
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 	if (opt_pd_binary && !opt_pds) {
 		g_critical("Option -B will not take effect in the absence of -P.");
 		goto done;
 	}
 
 	/* Set the loglevel (amount of messages to output) for libopentracedecode. */
-	if (srd_log_loglevel_set(opt_loglevel) != SRD_OK)
+	if (srd_log_loglevel_set(opt_loglevel) != OTD_OK)
 		goto done;
 
 	if (opt_pds) {
-		if (srd_init(NULL) != SRD_OK)
+		if (srd_init(NULL) != OTD_OK)
 			goto done;
-		if (srd_session_new(&srd_sess) != SRD_OK) {
+		if (srd_session_new(&srd_sess) != OTD_OK) {
 			g_critical("Failed to create new decode session.");
 			goto done;
 		}
@@ -269,21 +269,21 @@ int main(int argc, char **argv)
 				goto done;
 			if (setup_binary_stdout() != 0)
 				goto done;
-			if (srd_pd_output_callback_add(srd_sess, SRD_OUTPUT_BINARY,
-					show_pd_binary, NULL) != SRD_OK)
+			if (srd_pd_output_callback_add(srd_sess, OTD_OUTPUT_BINARY,
+					show_pd_binary, NULL) != OTD_OK)
 				goto done;
 		} else if (opt_pd_meta) {
 			if (setup_pd_meta(opt_pd_meta) != 0)
 				goto done;
-			if (srd_pd_output_callback_add(srd_sess, SRD_OUTPUT_META,
-					show_pd_meta, NULL) != SRD_OK)
+			if (srd_pd_output_callback_add(srd_sess, OTD_OUTPUT_META,
+					show_pd_meta, NULL) != OTD_OK)
 				goto done;
 		} else {
 			if (opt_pd_annotations)
 				if (setup_pd_annotations(opt_pd_annotations) != 0)
 					goto done;
-			if (srd_pd_output_callback_add(srd_sess, SRD_OUTPUT_ANN,
-					show_pd_annotations, NULL) != SRD_OK)
+			if (srd_pd_output_callback_add(srd_sess, OTD_OUTPUT_ANN,
+					show_pd_annotations, NULL) != OTD_OK)
 				goto done;
 		}
 		show_pd_prepare();
@@ -306,7 +306,7 @@ int main(int argc, char **argv)
 		show_transform();
 	else if (opt_scan_devs)
 		show_dev_list();
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 	else if (opt_pds && opt_show)
 		show_pd_detail();
 #endif
@@ -325,7 +325,7 @@ int main(int argc, char **argv)
 	else
 		show_help();
 
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 	if (opt_pds)
 		show_pd_close();
 	if (opt_pds)
