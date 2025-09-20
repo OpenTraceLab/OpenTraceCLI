@@ -13,18 +13,60 @@ project('opentrace-cli', 'c',
 project_description = 'Command-line frontend for OpenTrace'
 project_url = 'http://www.opentrace.org'
 
-# Dependencies
-libopentrace_dep = dependency('libopentrace', version : '>= 0.6.0')
+# Compiler setup
+cc = meson.get_compiler('c')
+
+# Add extra C flags for C99 support and warnings
+extra_cflags = []
+warning_flags = []
+
+# Check for C99 support
+if cc.has_argument('-std=c99')
+  extra_cflags += '-std=c99'
+elif cc.has_argument('-c99')
+  extra_cflags += '-c99'
+elif cc.has_argument('-AC99')
+  extra_cflags += '-AC99'
+elif cc.has_argument('-qlanglvl=extc99')
+  extra_cflags += '-qlanglvl=extc99'
+endif
+
+# Warning flags
+if cc.has_argument('-Wall')
+  warning_flags += '-Wall'
+endif
+if cc.has_argument('-Wextra')
+  warning_flags += '-Wextra'
+endif
+
+add_project_arguments(extra_cflags + warning_flags, language : 'c')
+
+# Large file support
+add_project_arguments('-D_FILE_OFFSET_BITS=64', language : 'c')
+
+# POSIX C source
+add_project_arguments('-D_POSIX_C_SOURCE=200112L', language : 'c')
+
+# Required dependencies
 glib_dep = dependency('glib-2.0', version : '>= 2.32.0')
+libopentrace_dep = dependency('libopentrace', version : '>= 0.5.0')
 
 # Optional dependencies
-libopentracedecode_dep = dependency('libopentracedecode', version : '>= 0.6.0', required : false)
+libopentracedecode_dep = dependency('libopentracedecode', 
+  version : '>= 0.5.0', 
+  required : get_option('decode'),
+  disabler : true
+)
 
-# Configuration
+# Configuration data
 conf_data = configuration_data()
 conf_data.set_quoted('PACKAGE_VERSION', meson.project_version())
 conf_data.set_quoted('PACKAGE_NAME', meson.project_name())
 conf_data.set('HAVE_SRD', libopentracedecode_dep.found())
+
+# Get library versions for summary
+glib_version = glib_dep.version()
+libopentrace_version = libopentrace_dep.version()
 
 configure_file(
   output : 'config.h',
@@ -34,7 +76,8 @@ configure_file(
 # Include directories
 inc_dir = include_directories('.')
 
-# Source files
+# Source files - always include all sources like original Makefile.am
+# Conditional compilation happens at preprocessor level with #ifdef HAVE_SRD
 opentrace_cli_sources = [
   'main.c',
   'show.c', 
@@ -73,3 +116,28 @@ install_data('contrib/org.opentrace.opentrace-cli.desktop',
 install_data('contrib/opentrace-cli.svg',
   install_dir : get_option('datadir') / 'icons/hicolor/scalable/apps'
 )
+
+# Configuration summary
+summary({
+  'Package version' : meson.project_version(),
+  'Prefix' : get_option('prefix'),
+  'C compiler' : cc.get_id() + ' ' + cc.version(),
+  'C compiler flags' : ' '.join(get_option('c_args')),
+  'Extra C flags' : ' '.join(extra_cflags),
+  'Warning flags' : ' '.join(warning_flags),
+}, section : 'Compile configuration')
+
+summary({
+  'glib-2.0' : glib_version,
+  'libopentrace' : libopentrace_version,
+}, section : 'Required libraries')
+
+if libopentracedecode_dep.found()
+  summary({
+    'libopentracedecode' : libopentracedecode_dep.version(),
+  }, section : 'Optional libraries')
+else
+  summary({
+    'libopentracedecode' : 'NO (protocol decoding disabled)',
+  }, section : 'Optional libraries')
+endif

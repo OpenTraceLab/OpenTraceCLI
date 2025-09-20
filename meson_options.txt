@@ -1,0 +1,2 @@
+option('decode', type : 'feature', value : 'auto',
+  description : 'Build with protocol decoding support (requires libopentracedecode)')
