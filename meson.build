@@ -62,7 +62,7 @@ libopentracedecode_dep = dependency('libopentracedecode',
 conf_data = configuration_data()
 conf_data.set_quoted('PACKAGE_VERSION', meson.project_version())
 conf_data.set_quoted('PACKAGE_NAME', meson.project_name())
-conf_data.set('HAVE_SRD', libopentracedecode_dep.found())
+conf_data.set('HAVE_OTD', libopentracedecode_dep.found())
 
 # Get library versions for summary
 glib_version = glib_dep.version()
@@ -77,7 +77,7 @@ configure_file(
 inc_dir = include_directories('.')
 
 # Source files - always include all sources like original Makefile.am
-# Conditional compilation happens at preprocessor level with #ifdef HAVE_SRD
+# Conditional compilation happens at preprocessor level with #ifdef HAVE_OTD
 opentrace_cli_sources = [
   'main.c',
   'show.c', 

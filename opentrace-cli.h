@@ -24,7 +24,7 @@ Original Copyright (C) 2011 Bert Vermeulen <bert@biot.com>
 #ifndef OPENTRACE_CLI_OPENTRACE_CLI_H
 #define OPENTRACE_CLI_OPENTRACE_CLI_H
 
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 /* First, so we avoid a _POSIX_C_SOURCE warning. */
 #include <libopentracedecode/libopentracedecode.h>
 #endif
@@ -92,7 +92,7 @@ void load_input_file(gboolean do_props);
 int setup_binary_stdout(void);
 
 /* decode.c */
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 extern uint64_t pd_samplerate;
 int register_pds(gchar **all_pds, char *opt_pd_annotations);
 int setup_pd_annotations(char *opt_pd_annotations);
@@ -141,7 +141,7 @@ extern gchar *opt_channels;
 extern gchar *opt_channel_group;
 extern gchar *opt_triggers;
 extern gchar **opt_pds;
-#ifdef HAVE_SRD
+#ifdef HAVE_OTD
 extern gchar *opt_pd_annotations;
 extern gchar *opt_pd_meta;
 extern gchar *opt_pd_binary;
