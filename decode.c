@@ -1,7 +1,9 @@
 /*
- * This file is part of the sigrok-cli project.
+ * This file is part of the OpenTraceCLI project.
+Originally derived from opentrace-cli project.
  *
- * Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
+ * Copyright (C) 2024 OpenTraceLab Contributors
+Original Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
-#include "sigrok-cli.h"
+#include "opentrace-cli.h"
 
 #ifdef HAVE_SRD
 static GHashTable *pd_ann_visible = NULL;
@@ -149,8 +151,8 @@ static int register_pd(char *opt_pds, char *opt_pd_annotations)
 			break;
 		}
 
-		pd_name = g_strdup(g_hash_table_lookup(pd_opthash, "sigrok_key"));
-		g_hash_table_remove(pd_opthash, "sigrok_key");
+		pd_name = g_strdup(g_hash_table_lookup(pd_opthash, "opentrace_key"));
+		g_hash_table_remove(pd_opthash, "opentrace_key");
 		if (srd_decoder_load(pd_name) != SRD_OK) {
 			g_critical("Failed to load protocol decoder %s.", pd_name);
 			ret = 1;
@@ -262,7 +264,7 @@ static void map_pd_inst_channels(void *key, void *value, void *user_data)
 	GVariant *var;
 	void *channel_id;
 	void *channel_target;
-	struct sr_channel *ch;
+	struct otc_channel *ch;
 	GHashTableIter iter;
 	enum assign_t {
 		ASSIGN_UNKNOWN,
@@ -288,16 +290,16 @@ static void map_pd_inst_channels(void *key, void *value, void *user_data)
 
 	/*
 	 * The typical mode of operation is to apply a user specified
-	 * mapping of sigrok channels to decoder inputs. Lack of mapping
+	 * mapping of opentrace channels to decoder inputs. Lack of mapping
 	 * specs will assign no signals (compatible behaviour to earlier
 	 * implementations).
 	 *
-	 * Alternatively we can assign sigrok logic channels to decoder
+	 * Alternatively we can assign opentrace logic channels to decoder
 	 * inputs in the strict order of channel indices, or when their
 	 * names match. Users need to request this automatic assignment
 	 * though, because this behaviour differs from earlier versions.
 	 *
-	 * Even more sophisticated heuristics of mapping sigrok channels
+	 * Even more sophisticated heuristics of mapping opentrace channels
 	 * to decoder inputs are not implemented here. Later versions
 	 * could translate the Pulseview approach to the C language, but
 	 * it's better to stabilize that logic first before porting it.
@@ -323,8 +325,8 @@ static void map_pd_inst_channels(void *key, void *value, void *user_data)
 		/*
 		 * Iterate the protocol decoder's list of input signals
 		 * (mandatory and optional, never more than the decoder's
-		 * total channels count). Assign sigrok logic channels
-		 * until either is exhausted. Use sigrok channels in the
+		 * total channels count). Assign opentrace logic channels
+		 * until either is exhausted. Use opentrace channels in the
 		 * very order of their declaration in the input stream.
 		 */
 		l_ch = channel_list;
@@ -332,7 +334,7 @@ static void map_pd_inst_channels(void *key, void *value, void *user_data)
 		while (l_ch && l_pd) {
 			ch = l_ch->data;
 			l_ch = l_ch->next;
-			if (ch->type != SR_CHANNEL_LOGIC)
+			if (ch->type != OTC_CHANNEL_LOGIC)
 				break;
 			if (ch->index >= di->dec_num_channels)
 				break;
@@ -347,9 +349,9 @@ static void map_pd_inst_channels(void *key, void *value, void *user_data)
 	} else if (assign == ASSIGN_BY_NAMES) {
 		/*
 		 * Iterate the protocol decoder's list of input signals.
-		 * Search for sigrok logic channels that have matching
+		 * Search for opentrace logic channels that have matching
 		 * names (case insensitive comparison). Not finding a
-		 * sigrok channel of a given name is non-fatal (could be
+		 * opentrace channel of a given name is non-fatal (could be
 		 * an optional channel, the decoder will check later for
 		 * all mandatory channels to be assigned).
 		 */
@@ -368,7 +370,7 @@ static void map_pd_inst_channels(void *key, void *value, void *user_data)
 				/* if (l_pdo) ...; */
 				continue;
 			}
-			if (ch->type != SR_CHANNEL_LOGIC) {
+			if (ch->type != OTC_CHANNEL_LOGIC) {
 				/* TODO Emit a WARN message. */
 				continue;
 			}
@@ -406,11 +408,11 @@ static void map_pd_inst_channels(void *key, void *value, void *user_data)
 	g_hash_table_destroy(channel_indices);
 }
 
-void map_pd_channels(struct sr_dev_inst *sdi)
+void map_pd_channels(struct otc_dev_inst *sdi)
 {
 	GSList *channels;
 
-	channels = sr_dev_inst_channels_get(sdi);
+	channels = otc_dev_inst_channels_get(sdi);
 
 	if (pd_channel_maps) {
 		g_hash_table_foreach(pd_channel_maps, &map_pd_inst_channels,
@@ -783,13 +785,13 @@ void show_pd_annotations(struct srd_proto_data *pdata, void *cb_data)
 	 *   recipients might have to deal with a set of text variants.
 	 */
 	show_snum = show_class = show_quotes = show_abbrev = FALSE;
-	if (opt_pd_samplenum || opt_loglevel > SR_LOG_WARN) {
+	if (opt_pd_samplenum || opt_loglevel > OTC_LOG_WARN) {
 		show_snum = TRUE;
 	}
-	if (opt_loglevel > SR_LOG_WARN) {
+	if (opt_loglevel > OTC_LOG_WARN) {
 		show_quotes = TRUE;
 	}
-	if (opt_loglevel > SR_LOG_INFO) {
+	if (opt_loglevel > OTC_LOG_INFO) {
 		show_class = TRUE;
 		show_abbrev = TRUE;
 	}
@@ -828,7 +830,7 @@ void show_pd_meta(struct srd_proto_data *pdata, void *cb_data)
 		/* Not in the list of PDs whose meta output we're showing. */
 		return;
 
-	if (opt_pd_samplenum || opt_loglevel > SR_LOG_WARN)
+	if (opt_pd_samplenum || opt_loglevel > OTC_LOG_WARN)
 		printf("%"PRIu64"-%"PRIu64" ", pdata->start_sample, pdata->end_sample);
 	printf("%s: ", pdata->pdo->proto_id);
 	printf("%s: %s", pdata->pdo->meta_name, g_variant_print(pdata->data, FALSE));

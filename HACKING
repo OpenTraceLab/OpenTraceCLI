@@ -21,9 +21,9 @@ Contributions
    hosting site.
 
  - Alternatively, patches can be sent to the development mailinglist at
-   sigrok-devel@lists.sourceforge.net (please subscribe to the list first).
+   opentrace-devel@lists.sourceforge.net (please subscribe to the list first).
 
-   https://lists.sourceforge.net/lists/listinfo/sigrok-devel
+   https://lists.sourceforge.net/lists/listinfo/opentrace-devel
 
 
 Random notes
@@ -53,7 +53,7 @@ Random notes
 
  - You should never print any messages (neither to stdout nor stderr nor
    elsewhere) "manually" via e.g. printf() or g_log() or similar functions.
-   Only sr_err()/sr_warn()/sr_info()/sr_dbg()/sr_spew() should be used.
+   Only otc_err()/otc_warn()/otc_info()/otc_dbg()/otc_spew() should be used.
 
  - Use glib's gboolean / TRUE / FALSE for boolean types consistently.
    Do not use <stdbool.h> and its true / false, and do not invent private
@@ -62,7 +62,7 @@ Random notes
  - Consistently use the same naming convention for #include guards in headers:
    <PROJECTNAME>_<PATH_TO_FILE>_<FILE>
    This ensures that all #include guards are always unique and consistent.
-   Example: SIGROK_CLI_SIGROK_CLI_H
+   Example: OPENTRACE_CLI_OPENTRACE_CLI_H
 
  - Consistently use the same naming convention for functions, if appropriate:
 
@@ -85,7 +85,7 @@ Release engineering
 
 See
 
- http://sigrok.org/wiki/Developers/Release_process
+ http://opentrace.org/wiki/Developers/Release_process
 
 for a list of items that need to be done when releasing a new tarball.
 

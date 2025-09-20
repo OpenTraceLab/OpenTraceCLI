@@ -1,7 +1,9 @@
 /*
- * This file is part of the sigrok-cli project.
+ * This file is part of the OpenTraceCLI project.
+Originally derived from opentrace-cli project.
  *
- * Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
+ * Copyright (C) 2024 OpenTraceLab Contributors
+Original Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,12 +21,12 @@
 
 #include <config.h>
 #include <glib.h>
-#include "sigrok-cli.h"
+#include "opentrace-cli.h"
 
 gboolean opt_version = FALSE;
 gboolean opt_list_supported = FALSE;
 gboolean opt_list_supported_wiki = FALSE;
-gint opt_loglevel = SR_LOG_WARN; /* Show errors+warnings by default. */
+gint opt_loglevel = OTC_LOG_WARN; /* Show errors+warnings by default. */
 gboolean opt_scan_devs = FALSE;
 gboolean opt_dont_scan = FALSE;
 gboolean opt_wait_trigger = FALSE;

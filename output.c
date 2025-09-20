@@ -1,7 +1,9 @@
 /*
- * This file is part of the sigrok-cli project.
+ * This file is part of the OpenTraceCLI project.
+Originally derived from opentrace-cli project.
  *
- * Copyright (C) 2019 Devan Lai <devan.lai@gmail.com>
+ * Copyright (C) 2024 OpenTraceLab Contributors
+Original Copyright (C) 2019 Devan Lai <devan.lai@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +27,7 @@
 #endif
 
 #include <glib.h>
-#include "sigrok-cli.h"
+#include "opentrace-cli.h"
 
 /* Disable newline translation on stdout when outputting binary data. */
 int setup_binary_stdout(void)

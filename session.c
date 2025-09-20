@@ -1,7 +1,9 @@
 /*
- * This file is part of the sigrok-cli project.
+ * This file is part of the OpenTraceCLI project.
+Originally derived from opentrace-cli project.
  *
- * Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
+ * Copyright (C) 2024 OpenTraceLab Contributors
+Original Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +24,7 @@
 #include <glib/gstdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "sigrok-cli.h"
+#include "opentrace-cli.h"
 
 static uint64_t limit_samples = 0;
 static uint64_t limit_frames = 0;
@@ -31,56 +33,56 @@ static uint64_t limit_frames = 0;
 extern struct srd_session *srd_sess;
 #endif
 
-static int set_limit_time(const struct sr_dev_inst *sdi)
+static int set_limit_time(const struct otc_dev_inst *sdi)
 {
 	GVariant *gvar;
 	uint64_t time_msec;
 	uint64_t samplerate;
-	struct sr_dev_driver *driver;
+	struct otc_dev_driver *driver;
 
-	driver = sr_dev_inst_driver_get(sdi);
+	driver = otc_dev_inst_driver_get(sdi);
 
-	if (!(time_msec = sr_parse_timestring(opt_time))) {
+	if (!(time_msec = otc_parse_timestring(opt_time))) {
 		g_critical("Invalid time '%s'", opt_time);
-		return SR_ERR;
+		return OTC_ERR;
 	}
 
-	if (sr_dev_config_capabilities_list(sdi, NULL, SR_CONF_LIMIT_MSEC)
-			& SR_CONF_SET) {
+	if (otc_dev_config_capabilities_list(sdi, NULL, OTC_CONF_LIMIT_MSEC)
+			& OTC_CONF_SET) {
 		gvar = g_variant_new_uint64(time_msec);
-		if (sr_config_set(sdi, NULL, SR_CONF_LIMIT_MSEC, gvar) != SR_OK) {
+		if (otc_config_set(sdi, NULL, OTC_CONF_LIMIT_MSEC, gvar) != OTC_OK) {
 			g_critical("Failed to configure time limit.");
-			return SR_ERR;
+			return OTC_ERR;
 		}
-	} else if (sr_dev_config_capabilities_list(sdi, NULL, SR_CONF_SAMPLERATE)
-			& (SR_CONF_GET | SR_CONF_SET)) {
+	} else if (otc_dev_config_capabilities_list(sdi, NULL, OTC_CONF_SAMPLERATE)
+			& (OTC_CONF_GET | OTC_CONF_SET)) {
 		/* Convert to samples based on the samplerate. */
-		sr_config_get(driver, sdi, NULL, SR_CONF_SAMPLERATE, &gvar);
+		otc_config_get(driver, sdi, NULL, OTC_CONF_SAMPLERATE, &gvar);
 		samplerate = g_variant_get_uint64(gvar);
 		g_variant_unref(gvar);
 		limit_samples = (samplerate) * time_msec / (uint64_t)1000;
 		if (limit_samples == 0) {
 			g_critical("Not enough time at this samplerate.");
-			return SR_ERR;
+			return OTC_ERR;
 		}
 		gvar = g_variant_new_uint64(limit_samples);
-		if (sr_config_set(sdi, NULL, SR_CONF_LIMIT_SAMPLES, gvar) != SR_OK) {
+		if (otc_config_set(sdi, NULL, OTC_CONF_LIMIT_SAMPLES, gvar) != OTC_OK) {
 			g_critical("Failed to configure time-based sample limit.");
-			return SR_ERR;
+			return OTC_ERR;
 		}
 	} else {
 		g_critical("This device does not support time limits.");
-		return SR_ERR;
+		return OTC_ERR;
 	}
 
-	return SR_OK;
+	return OTC_OK;
 }
 
-const struct sr_output *setup_output_format(const struct sr_dev_inst *sdi, FILE **outfile)
+const struct otc_output *setup_output_format(const struct otc_dev_inst *sdi, FILE **outfile)
 {
-	const struct sr_output_module *omod;
-	const struct sr_option **options;
-	const struct sr_output *o;
+	const struct otc_output_module *omod;
+	const struct otc_option **options;
+	const struct otc_output *o;
 	GHashTable *fmtargs, *fmtopts;
 	char *fmtspec;
 
@@ -93,23 +95,23 @@ const struct sr_output *setup_output_format(const struct sr_dev_inst *sdi, FILE 
 	}
 
 	fmtargs = parse_generic_arg(opt_output_format, TRUE, NULL);
-	fmtspec = g_hash_table_lookup(fmtargs, "sigrok_key");
+	fmtspec = g_hash_table_lookup(fmtargs, "opentrace_key");
 	if (!fmtspec)
 		g_critical("Invalid output format.");
-	if (!(omod = sr_output_find(fmtspec)))
+	if (!(omod = otc_output_find(fmtspec)))
 		g_critical("Unknown output module '%s'.", fmtspec);
-	g_hash_table_remove(fmtargs, "sigrok_key");
-	if ((options = sr_output_options_get(omod))) {
+	g_hash_table_remove(fmtargs, "opentrace_key");
+	if ((options = otc_output_options_get(omod))) {
 		fmtopts = generic_arg_to_opt(options, fmtargs);
 		(void)warn_unknown_keys(options, fmtargs, NULL);
-		sr_output_options_free(options);
+		otc_output_options_free(options);
 	} else {
 		fmtopts = NULL;
 	}
-	o = sr_output_new(omod, fmtopts, sdi, opt_output_file);
+	o = otc_output_new(omod, fmtopts, sdi, opt_output_file);
 
 	if (opt_output_file) {
-		if (!sr_output_test_flag(omod, SR_OUTPUT_INTERNAL_IO_HANDLING)) {
+		if (!otc_output_test_flag(omod, OTC_OUTPUT_INTERNAL_IO_HANDLING)) {
 			*outfile = g_fopen(opt_output_file, "wb");
 			if (!*outfile) {
 				g_critical("Cannot write to output file '%s'.",
@@ -130,29 +132,29 @@ const struct sr_output *setup_output_format(const struct sr_dev_inst *sdi, FILE 
 	return o;
 }
 
-const struct sr_transform *setup_transform_module(const struct sr_dev_inst *sdi)
+const struct otc_transform *setup_transform_module(const struct otc_dev_inst *sdi)
 {
-	const struct sr_transform_module *tmod;
-	const struct sr_option **options;
-	const struct sr_transform *t;
+	const struct otc_transform_module *tmod;
+	const struct otc_option **options;
+	const struct otc_transform *t;
 	GHashTable *fmtargs, *fmtopts;
 	char *fmtspec;
 
 	fmtargs = parse_generic_arg(opt_transform_module, TRUE, NULL);
-	fmtspec = g_hash_table_lookup(fmtargs, "sigrok_key");
+	fmtspec = g_hash_table_lookup(fmtargs, "opentrace_key");
 	if (!fmtspec)
 		g_critical("Invalid transform module.");
-	if (!(tmod = sr_transform_find(fmtspec)))
+	if (!(tmod = otc_transform_find(fmtspec)))
 		g_critical("Unknown transform module '%s'.", fmtspec);
-	g_hash_table_remove(fmtargs, "sigrok_key");
-	if ((options = sr_transform_options_get(tmod))) {
+	g_hash_table_remove(fmtargs, "opentrace_key");
+	if ((options = otc_transform_options_get(tmod))) {
 		fmtopts = generic_arg_to_opt(options, fmtargs);
 		(void)warn_unknown_keys(options, fmtargs, NULL);
-		sr_transform_options_free(options);
+		otc_transform_options_free(options);
 	} else {
 		fmtopts = NULL;
 	}
-	t = sr_transform_new(tmod, fmtopts, sdi);
+	t = otc_transform_new(tmod, fmtopts, sdi);
 	if (fmtopts)
 		g_hash_table_destroy(fmtopts);
 	g_hash_table_destroy(fmtargs);
@@ -162,11 +164,11 @@ const struct sr_transform *setup_transform_module(const struct sr_dev_inst *sdi)
 
 /* Get the input stream's list of channels and their types, once. */
 static void props_get_channels(struct df_arg_desc *args,
-	const struct sr_dev_inst *sdi)
+	const struct otc_dev_inst *sdi)
 {
 	struct input_stream_props *props;
 	GSList *l;
-	const struct sr_channel *ch;
+	const struct otc_channel *ch;
 
 	if (!args)
 		return;
@@ -174,14 +176,14 @@ static void props_get_channels(struct df_arg_desc *args,
 	if (props->channels)
 		return;
 
-	props->channels = g_slist_copy(sr_dev_inst_channels_get(sdi));
+	props->channels = g_slist_copy(otc_dev_inst_channels_get(sdi));
 	if (!props->channels)
 		return;
 	for (l = props->channels; l; l = l->next) {
 		ch = l->data;
 		if (!ch->enabled)
 			continue;
-		if (ch->type != SR_CHANNEL_ANALOG)
+		if (ch->type != OTC_CHANNEL_ANALOG)
 			continue;
 		props->first_analog_channel = ch;
 		break;
@@ -189,9 +191,9 @@ static void props_get_channels(struct df_arg_desc *args,
 }
 
 static gboolean props_chk_1st_channel(struct df_arg_desc *args,
-	const struct sr_datafeed_analog *analog)
+	const struct otc_datafeed_analog *analog)
 {
-	struct sr_channel *ch;
+	struct otc_channel *ch;
 
 	if (!args || !analog || !analog->meaning)
 		return FALSE;
@@ -206,7 +208,7 @@ static void props_dump_details(struct df_arg_desc *args)
 	struct input_stream_props *props;
 	size_t ch_count;
 	GSList *l;
-	const struct sr_channel *ch;
+	const struct otc_channel *ch;
 	const char *type;
 
 	if (!args)
@@ -219,7 +221,7 @@ static void props_dump_details(struct df_arg_desc *args)
 		printf("Channels: %zu\n", ch_count);
 		for (l = props->channels; l; l = l->next) {
 			ch = l->data;
-			if (ch->type == SR_CHANNEL_ANALOG)
+			if (ch->type == OTC_CHANNEL_ANALOG)
 				type = "analog";
 			else
 				type = "logic";
@@ -250,40 +252,40 @@ static void props_cleanup(struct df_arg_desc *args)
 	props->first_analog_channel = NULL;
 }
 
-void datafeed_in(const struct sr_dev_inst *sdi,
-		const struct sr_datafeed_packet *packet, void *cb_data)
+void datafeed_in(const struct otc_dev_inst *sdi,
+		const struct otc_datafeed_packet *packet, void *cb_data)
 {
-	static const struct sr_output *o = NULL;
-	static const struct sr_output *oa = NULL;
+	static const struct otc_output *o = NULL;
+	static const struct otc_output *oa = NULL;
 	static uint64_t rcvd_samples_logic = 0;
 	static uint64_t rcvd_samples_analog = 0;
 	static uint64_t samplerate = 0;
 	static int triggered = 0;
 	static FILE *outfile = NULL;
 
-	const struct sr_datafeed_meta *meta;
-	const struct sr_datafeed_logic *logic;
-	const struct sr_datafeed_analog *analog;
+	const struct otc_datafeed_meta *meta;
+	const struct otc_datafeed_logic *logic;
+	const struct otc_datafeed_analog *analog;
 	struct df_arg_desc *df_arg;
 	int do_props;
 	struct input_stream_props *props;
-	struct sr_session *session;
-	struct sr_config *src;
+	struct otc_session *session;
+	struct otc_config *src;
 	GSList *l;
 	GString *out;
 	GVariant *gvar;
 	uint64_t end_sample;
 	uint64_t input_len;
-	struct sr_dev_driver *driver;
+	struct otc_dev_driver *driver;
 
 	/* Avoid warnings when building without decoder support. */
 	(void)session;
 	(void)input_len;
 
-	driver = sr_dev_inst_driver_get(sdi);
+	driver = otc_dev_inst_driver_get(sdi);
 
 	/* Skip all packets before the first header. */
-	if (packet->type != SR_DF_HEADER && !o)
+	if (packet->type != OTC_DF_HEADER && !o)
 		return;
 
 	/* Prepare to either process data, or "just" gather properties. */
@@ -293,10 +295,10 @@ void datafeed_in(const struct sr_dev_inst *sdi,
 	props = &df_arg->props;
 
 	switch (packet->type) {
-	case SR_DF_HEADER:
-		g_debug("cli: Received SR_DF_HEADER.");
-		if (maybe_config_get(driver, sdi, NULL, SR_CONF_SAMPLERATE,
-				&gvar) == SR_OK) {
+	case OTC_DF_HEADER:
+		g_debug("cli: Received OTC_DF_HEADER.");
+		if (maybe_config_get(driver, sdi, NULL, OTC_CONF_SAMPLERATE,
+				&gvar) == OTC_OK) {
 			samplerate = g_variant_get_uint64(gvar);
 			g_variant_unref(gvar);
 		}
@@ -315,7 +317,7 @@ void datafeed_in(const struct sr_dev_inst *sdi,
 
 		/* Set up backup analog output module. */
 		if (outfile)
-			oa = sr_output_new(sr_output_find("analog"), NULL,
+			oa = otc_output_new(otc_output_find("analog"), NULL,
 					sdi, NULL);
 
 		rcvd_samples_logic = rcvd_samples_analog = 0;
@@ -338,13 +340,13 @@ void datafeed_in(const struct sr_dev_inst *sdi,
 #endif
 		break;
 
-	case SR_DF_META:
-		g_debug("cli: Received SR_DF_META.");
+	case OTC_DF_META:
+		g_debug("cli: Received OTC_DF_META.");
 		meta = packet->payload;
 		for (l = meta->config; l; l = l->next) {
 			src = l->data;
 			switch (src->key) {
-			case SR_CONF_SAMPLERATE:
+			case OTC_CONF_SAMPLERATE:
 				samplerate = g_variant_get_uint64(src->data);
 				g_debug("cli: Got samplerate %"PRIu64" Hz.", samplerate);
 				if (do_props) {
@@ -361,7 +363,7 @@ void datafeed_in(const struct sr_dev_inst *sdi,
 				}
 #endif
 				break;
-			case SR_CONF_SAMPLE_INTERVAL:
+			case OTC_CONF_SAMPLE_INTERVAL:
 				samplerate = g_variant_get_uint64(src->data);
 				g_debug("cli: Got sample interval %"PRIu64" ms.", samplerate);
 				if (do_props) {
@@ -376,8 +378,8 @@ void datafeed_in(const struct sr_dev_inst *sdi,
 		}
 		break;
 
-	case SR_DF_TRIGGER:
-		g_debug("cli: Received SR_DF_TRIGGER.");
+	case OTC_DF_TRIGGER:
+		g_debug("cli: Received OTC_DF_TRIGGER.");
 		if (do_props) {
 			props->triggered++;
 			break;
@@ -385,9 +387,9 @@ void datafeed_in(const struct sr_dev_inst *sdi,
 		triggered = 1;
 		break;
 
-	case SR_DF_LOGIC:
+	case OTC_DF_LOGIC:
 		logic = packet->payload;
-		g_message("cli: Received SR_DF_LOGIC (%"PRIu64" bytes, unitsize = %d).",
+		g_message("cli: Received OTC_DF_LOGIC (%"PRIu64" bytes, unitsize = %d).",
 				logic->length, logic->unitsize);
 		if (logic->length == 0)
 			break;
@@ -416,16 +418,16 @@ void datafeed_in(const struct sr_dev_inst *sdi,
 #ifdef HAVE_SRD
 			if (srd_session_send(srd_sess, rcvd_samples_logic, end_sample,
 					logic->data, input_len, logic->unitsize) != SRD_OK)
-				sr_session_stop(session);
+				otc_session_stop(session);
 #endif
 		}
 
 		rcvd_samples_logic = end_sample;
 		break;
 
-	case SR_DF_ANALOG:
+	case OTC_DF_ANALOG:
 		analog = packet->payload;
-		g_message("cli: Received SR_DF_ANALOG (%d samples).", analog->num_samples);
+		g_message("cli: Received OTC_DF_ANALOG (%d samples).", analog->num_samples);
 		if (analog->num_samples == 0)
 			break;
 
@@ -444,12 +446,12 @@ void datafeed_in(const struct sr_dev_inst *sdi,
 		rcvd_samples_analog += analog->num_samples;
 		break;
 
-	case SR_DF_FRAME_BEGIN:
-		g_debug("cli: Received SR_DF_FRAME_BEGIN.");
+	case OTC_DF_FRAME_BEGIN:
+		g_debug("cli: Received OTC_DF_FRAME_BEGIN.");
 		break;
 
-	case SR_DF_FRAME_END:
-		g_debug("cli: Received SR_DF_FRAME_END.");
+	case OTC_DF_FRAME_END:
+		g_debug("cli: Received OTC_DF_FRAME_END.");
 		if (do_props) {
 			props->frame_count++;
 			break;
@@ -461,13 +463,13 @@ void datafeed_in(const struct sr_dev_inst *sdi,
 	}
 
 	if (!do_props && o && !opt_pds) {
-		if (sr_output_send(o, packet, &out) == SR_OK) {
+		if (otc_output_send(o, packet, &out) == OTC_OK) {
 			if (oa && !out) {
 				/*
 				 * The user didn't specify an output module,
 				 * but needs to see this analog data.
 				 */
-				sr_output_send(oa, packet, &out);
+				otc_output_send(oa, packet, &out);
 			}
 			if (outfile && out && out->len > 0) {
 				fwrite(out->str, 1, out->len, outfile);
@@ -479,11 +481,11 @@ void datafeed_in(const struct sr_dev_inst *sdi,
 	}
 
 	/*
-	 * SR_DF_END needs to be handled after the output module's receive()
+	 * OTC_DF_END needs to be handled after the output module's receive()
 	 * is called, so it can properly clean up that module.
 	 */
-	if (packet->type == SR_DF_END) {
-		g_debug("cli: Received SR_DF_END.");
+	if (packet->type == OTC_DF_END) {
+		g_debug("cli: Received OTC_DF_END.");
 
 #if defined HAVE_SRD_SESSION_SEND_EOF && HAVE_SRD_SESSION_SEND_EOF
 		(void)srd_session_send_eof(srd_sess);
@@ -496,11 +498,11 @@ void datafeed_in(const struct sr_dev_inst *sdi,
 		}
 
 		if (o)
-			sr_output_free(o);
+			otc_output_free(o);
 		o = NULL;
 
 		if (oa)
-			sr_output_free(oa);
+			otc_output_free(oa);
 		oa = NULL;
 
 		if (outfile && outfile != stdout)
@@ -518,9 +520,9 @@ void datafeed_in(const struct sr_dev_inst *sdi,
 
 }
 
-int opt_to_gvar(char *key, char *value, struct sr_config *src)
+int opt_to_gvar(char *key, char *value, struct otc_config *src)
 {
-	const struct sr_key_info *srci, *srmqi;
+	const struct otc_key_info *srci, *srmqi;
 	double tmp_double, dlow, dhigh;
 	uint64_t tmp_u64, p, q, low, high, mqflags;
 	uint32_t mq;
@@ -530,61 +532,61 @@ int opt_to_gvar(char *key, char *value, struct sr_config *src)
 	gchar **keyval;
 	int ret, i;
 
-	if (!(srci = sr_key_info_name_get(SR_KEY_CONFIG, key))) {
+	if (!(srci = otc_key_info_name_get(OTC_KEY_CONFIG, key))) {
 		g_critical("Unknown device option '%s'.", (char *) key);
 		return -1;
 	}
 	src->key = srci->key;
 
 	if ((!value || strlen(value) == 0) &&
-		(srci->datatype != SR_T_BOOL)) {
+		(srci->datatype != OTC_T_BOOL)) {
 		g_critical("Option '%s' needs a value.", (char *)key);
 		return -1;
 	}
 
 	ret = 0;
 	switch (srci->datatype) {
-	case SR_T_UINT64:
-		ret = sr_parse_sizestring(value, &tmp_u64);
+	case OTC_T_UINT64:
+		ret = otc_parse_sizestring(value, &tmp_u64);
 		if (ret != 0)
 			break;
 		src->data = g_variant_new_uint64(tmp_u64);
 		break;
-	case SR_T_INT32:
-		ret = sr_parse_sizestring(value, &tmp_u64);
+	case OTC_T_INT32:
+		ret = otc_parse_sizestring(value, &tmp_u64);
 		if (ret != 0)
 			break;
 		src->data = g_variant_new_int32(tmp_u64);
 		break;
-	case SR_T_STRING:
+	case OTC_T_STRING:
 		src->data = g_variant_new_string(value);
 		break;
-	case SR_T_BOOL:
+	case OTC_T_BOOL:
 		if (!value)
 			tmp_bool = TRUE;
 		else
-			tmp_bool = sr_parse_boolstring(value);
+			tmp_bool = otc_parse_boolstring(value);
 		src->data = g_variant_new_boolean(tmp_bool);
 		break;
-	case SR_T_FLOAT:
+	case OTC_T_FLOAT:
 		tmp_double = strtof(value, NULL);
 		src->data = g_variant_new_double(tmp_double);
 		break;
-	case SR_T_RATIONAL_PERIOD:
-		if ((ret = sr_parse_period(value, &p, &q)) != SR_OK)
+	case OTC_T_RATIONAL_PERIOD:
+		if ((ret = otc_parse_period(value, &p, &q)) != OTC_OK)
 			break;
 		rational[0] = g_variant_new_uint64(p);
 		rational[1] = g_variant_new_uint64(q);
 		src->data = g_variant_new_tuple(rational, 2);
 		break;
-	case SR_T_RATIONAL_VOLT:
-		if ((ret = sr_parse_voltage(value, &p, &q)) != SR_OK)
+	case OTC_T_RATIONAL_VOLT:
+		if ((ret = otc_parse_voltage(value, &p, &q)) != OTC_OK)
 			break;
 		rational[0] = g_variant_new_uint64(p);
 		rational[1] = g_variant_new_uint64(q);
 		src->data = g_variant_new_tuple(rational, 2);
 		break;
-	case SR_T_UINT64_RANGE:
+	case OTC_T_UINT64_RANGE:
 		if (sscanf(value, "%"PRIu64"-%"PRIu64, &low, &high) != 2) {
 			ret = -1;
 			break;
@@ -594,7 +596,7 @@ int opt_to_gvar(char *key, char *value, struct sr_config *src)
 			src->data = g_variant_new_tuple(range, 2);
 		}
 		break;
-	case SR_T_DOUBLE_RANGE:
+	case OTC_T_DOUBLE_RANGE:
 		if (sscanf(value, "%lf-%lf", &dlow, &dhigh) != 2) {
 			ret = -1;
 			break;
@@ -604,7 +606,7 @@ int opt_to_gvar(char *key, char *value, struct sr_config *src)
 			src->data = g_variant_new_tuple(range, 2);
 		}
 		break;
-	case SR_T_KEYVALUE:
+	case OTC_T_KEYVALUE:
 		/* Expects the argument to be in the form of key=value. */
 		keyval = g_strsplit(value, "=", 2);
 		if (!keyval[0] || !keyval[1]) {
@@ -619,13 +621,13 @@ int opt_to_gvar(char *key, char *value, struct sr_config *src)
 			g_strfreev(keyval);
 		}
 		break;
-	case SR_T_MQ:
+	case OTC_T_MQ:
 		/*
 		  Argument is MQ id e.g. ("voltage") optionally followed by one
 		  or more /<mqflag> e.g. "/ac".
 		 */
 		keyval = g_strsplit(value, "/", 0);
-		if (!keyval[0] || !(srmqi = sr_key_info_name_get(SR_KEY_MQ, keyval[0]))) {
+		if (!keyval[0] || !(srmqi = otc_key_info_name_get(OTC_KEY_MQ, keyval[0]))) {
 			g_strfreev(keyval);
 			ret = -1;
 			break;
@@ -633,7 +635,7 @@ int opt_to_gvar(char *key, char *value, struct sr_config *src)
 		mq = srmqi->key;
 		mqflags = 0;
 		for (i = 1; keyval[i]; i++) {
-			if (!(srmqi = sr_key_info_name_get(SR_KEY_MQFLAGS, keyval[i]))) {
+			if (!(srmqi = otc_key_info_name_get(OTC_KEY_MQFLAGS, keyval[i]))) {
 				ret = -1;
 				break;
 			}
@@ -658,7 +660,7 @@ int opt_to_gvar(char *key, char *value, struct sr_config *src)
 	return ret;
 }
 
-int set_dev_options_array(struct sr_dev_inst *sdi, char **opts)
+int set_dev_options_array(struct otc_dev_inst *sdi, char **opts)
 {
 	size_t opt_idx;
 	const char *opt_text;
@@ -672,46 +674,46 @@ int set_dev_options_array(struct sr_dev_inst *sdi, char **opts)
 			continue;
 		ret = set_dev_options(sdi, args);
 		g_hash_table_destroy(args);
-		if (ret != SR_OK)
+		if (ret != OTC_OK)
 			return ret;
 	}
 
-	return SR_OK;
+	return OTC_OK;
 }
 
-int set_dev_options(struct sr_dev_inst *sdi, GHashTable *args)
+int set_dev_options(struct otc_dev_inst *sdi, GHashTable *args)
 {
-	struct sr_config src;
+	struct otc_config src;
 	const char *cg_name;
-	struct sr_channel_group *cg;
+	struct otc_channel_group *cg;
 	GHashTableIter iter;
 	gpointer key, value;
 	int ret;
 
 	/*
-	 * Not finding the 'sigrok_key' key (optional user specified
+	 * Not finding the 'opentrace_key' key (optional user specified
 	 * channel group name) in the current options group's hash table
 	 * is perfectly fine. In that case the -g selection is used,
 	 * which defaults to "the device" (global parameters).
 	 */
-	cg_name = g_hash_table_lookup(args, "sigrok_key");
+	cg_name = g_hash_table_lookup(args, "opentrace_key");
 	cg = lookup_channel_group(sdi, cg_name);
 
 	g_hash_table_iter_init(&iter, args);
 	while (g_hash_table_iter_next(&iter, &key, &value)) {
-		if (g_ascii_strcasecmp(key, "sigrok_key") == 0)
+		if (g_ascii_strcasecmp(key, "opentrace_key") == 0)
 			continue;
 		if ((ret = opt_to_gvar(key, value, &src)) != 0)
 			return ret;
-		if ((ret = maybe_config_set(sr_dev_inst_driver_get(sdi), sdi, cg,
-				src.key, src.data)) != SR_OK) {
+		if ((ret = maybe_config_set(otc_dev_inst_driver_get(sdi), sdi, cg,
+				src.key, src.data)) != OTC_OK) {
 			g_critical("Failed to set device option '%s': %s.",
-				   (char *)key, sr_strerror(ret));
+				   (char *)key, otc_strerror(ret));
 			return ret;
 		}
 	}
 
-	return SR_OK;
+	return OTC_OK;
 }
 
 void run_session(void)
@@ -719,15 +721,15 @@ void run_session(void)
 	struct df_arg_desc df_arg;
 	GSList *devices, *real_devices, *sd;
 	GVariant *gvar;
-	struct sr_session *session;
-	struct sr_trigger *trigger;
-	struct sr_dev_inst *sdi;
+	struct otc_session *session;
+	struct otc_trigger *trigger;
+	struct otc_dev_inst *sdi;
 	uint64_t min_samples, max_samples;
 	GArray *drv_opts;
 	guint i;
 	int is_demo_dev;
-	struct sr_dev_driver *driver;
-	const struct sr_transform *t;
+	struct otc_dev_driver *driver;
+	const struct otc_transform *t;
 	GMainLoop *main_loop;
 
 	memset(&df_arg, 0, sizeof(df_arg));
@@ -743,16 +745,16 @@ void run_session(void)
 	for (sd = devices; sd; sd = sd->next) {
 		sdi = sd->data;
 
-		driver = sr_dev_inst_driver_get(sdi);
+		driver = otc_dev_inst_driver_get(sdi);
 
-		if (!(drv_opts = sr_dev_options(driver, NULL, NULL))) {
+		if (!(drv_opts = otc_dev_options(driver, NULL, NULL))) {
 			g_critical("Failed to query list of driver options.");
 			return;
 		}
 
 		is_demo_dev = 0;
 		for (i = 0; i < drv_opts->len; i++) {
-			if (g_array_index(drv_opts, uint32_t, i) == SR_CONF_DEMO_DEV)
+			if (g_array_index(drv_opts, uint32_t, i) == OTC_CONF_DEMO_DEV)
 				is_demo_dev = 1;
 		}
 
@@ -764,7 +766,7 @@ void run_session(void)
 
 	if (g_slist_length(devices) > 1) {
 		if (g_slist_length(real_devices) != 1) {
-			g_critical("sigrok-cli only supports one device for capturing.");
+			g_critical("opentrace-cli only supports one device for capturing.");
 			return;
 		} else {
 			/* We only have one non-demo device. */
@@ -784,68 +786,68 @@ void run_session(void)
 	g_slist_free(devices);
 	g_slist_free(real_devices);
 
-	sr_session_new(sr_ctx, &session);
+	otc_session_new(otc_ctx, &session);
 	df_arg.session = session;
-	sr_session_datafeed_callback_add(session, datafeed_in, &df_arg);
+	otc_session_datafeed_callback_add(session, datafeed_in, &df_arg);
 	df_arg.session = NULL;
 
-	if (sr_dev_open(sdi) != SR_OK) {
+	if (otc_dev_open(sdi) != OTC_OK) {
 		g_critical("Failed to open device.");
 		return;
 	}
 
-	if (sr_session_dev_add(session, sdi) != SR_OK) {
+	if (otc_session_dev_add(session, sdi) != OTC_OK) {
 		g_critical("Failed to add device to session.");
-		sr_session_destroy(session);
+		otc_session_destroy(session);
 		return;
 	}
 
 	if (opt_configs) {
-		if (set_dev_options_array(sdi, opt_configs) != SR_OK)
+		if (set_dev_options_array(sdi, opt_configs) != OTC_OK)
 			return;
 	}
 
-	if (select_channels(sdi) != SR_OK) {
+	if (select_channels(sdi) != OTC_OK) {
 		g_critical("Failed to set channels.");
-		sr_session_destroy(session);
+		otc_session_destroy(session);
 		return;
 	}
 
 	trigger = NULL;
 	if (opt_triggers) {
 		if (!parse_triggerstring(sdi, opt_triggers, &trigger)) {
-			sr_session_destroy(session);
+			otc_session_destroy(session);
 			return;
 		}
-		if (sr_session_trigger_set(session, trigger) != SR_OK) {
-			sr_session_destroy(session);
+		if (otc_session_trigger_set(session, trigger) != OTC_OK) {
+			otc_session_destroy(session);
 			return;
 		}
 	}
 
 	if (opt_continuous) {
-		if (!sr_dev_has_option(sdi, SR_CONF_CONTINUOUS)) {
+		if (!otc_dev_has_option(sdi, OTC_CONF_CONTINUOUS)) {
 			g_critical("This device does not support continuous sampling.");
-			sr_session_destroy(session);
+			otc_session_destroy(session);
 			return;
 		}
 	}
 
 	if (opt_time) {
-		if (set_limit_time(sdi) != SR_OK) {
-			sr_session_destroy(session);
+		if (set_limit_time(sdi) != OTC_OK) {
+			otc_session_destroy(session);
 			return;
 		}
 	}
 
 	if (opt_samples) {
-		if ((sr_parse_sizestring(opt_samples, &limit_samples) != SR_OK)) {
+		if ((otc_parse_sizestring(opt_samples, &limit_samples) != OTC_OK)) {
 			g_critical("Invalid sample limit '%s'.", opt_samples);
-			sr_session_destroy(session);
+			otc_session_destroy(session);
 			return;
 		}
-		if (maybe_config_list(driver, sdi, NULL, SR_CONF_LIMIT_SAMPLES,
-				&gvar) == SR_OK) {
+		if (maybe_config_list(driver, sdi, NULL, OTC_CONF_LIMIT_SAMPLES,
+				&gvar) == OTC_OK) {
 			/*
 			 * The device has no compression, or compression is turned
 			 * off, and publishes its sample memory size.
@@ -862,23 +864,23 @@ void run_session(void)
 			}
 		}
 		gvar = g_variant_new_uint64(limit_samples);
-		if (maybe_config_set(sr_dev_inst_driver_get(sdi), sdi, NULL, SR_CONF_LIMIT_SAMPLES, gvar) != SR_OK) {
+		if (maybe_config_set(otc_dev_inst_driver_get(sdi), sdi, NULL, OTC_CONF_LIMIT_SAMPLES, gvar) != OTC_OK) {
 			g_critical("Failed to configure sample limit.");
-			sr_session_destroy(session);
+			otc_session_destroy(session);
 			return;
 		}
 	}
 
 	if (opt_frames) {
-		if ((sr_parse_sizestring(opt_frames, &limit_frames) != SR_OK)) {
+		if ((otc_parse_sizestring(opt_frames, &limit_frames) != OTC_OK)) {
 			g_critical("Invalid frame limit '%s'.", opt_frames);
-			sr_session_destroy(session);
+			otc_session_destroy(session);
 			return;
 		}
 		gvar = g_variant_new_uint64(limit_frames);
-		if (maybe_config_set(sr_dev_inst_driver_get(sdi), sdi, NULL, SR_CONF_LIMIT_FRAMES, gvar) != SR_OK) {
+		if (maybe_config_set(otc_dev_inst_driver_get(sdi), sdi, NULL, OTC_CONF_LIMIT_FRAMES, gvar) != OTC_OK) {
 			g_critical("Failed to configure frame limit.");
-			sr_session_destroy(session);
+			otc_session_destroy(session);
 			return;
 		}
 	}
@@ -890,13 +892,13 @@ void run_session(void)
 
 	main_loop = g_main_loop_new(NULL, FALSE);
 
-	sr_session_stopped_callback_set(session,
-		(sr_session_stopped_callback)g_main_loop_quit, main_loop);
+	otc_session_stopped_callback_set(session,
+		(otc_session_stopped_callback)g_main_loop_quit, main_loop);
 
-	if (sr_session_start(session) != SR_OK) {
+	if (otc_session_start(session) != OTC_OK) {
 		g_critical("Failed to start session.");
 		g_main_loop_unref(main_loop);
-		sr_session_destroy(session);
+		otc_session_destroy(session);
 		return;
 	}
 
@@ -909,9 +911,9 @@ void run_session(void)
 		clear_anykey();
 
 	if (trigger)
-		sr_trigger_free(trigger);
+		otc_trigger_free(trigger);
 
-	sr_session_datafeed_callback_remove_all(session);
+	otc_session_datafeed_callback_remove_all(session);
 	g_main_loop_unref(main_loop);
-	sr_session_destroy(session);
+	otc_session_destroy(session);
 }

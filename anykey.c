@@ -1,7 +1,9 @@
 /*
- * This file is part of the sigrok-cli project.
+ * This file is part of the OpenTraceCLI project.
+Originally derived from opentrace-cli project.
  *
- * Copyright (C) 2011 Bert Vermeulen <bert@biot.com>
+ * Copyright (C) 2024 OpenTraceLab Contributors
+Original Copyright (C) 2011 Bert Vermeulen <bert@biot.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +29,7 @@
 #endif
 #include <string.h>
 #include <glib.h>
-#include "sigrok-cli.h"
+#include "opentrace-cli.h"
 
 #ifdef _WIN32
 static HANDLE stdin_handle;
@@ -40,21 +42,21 @@ static unsigned int watch_id = 0;
 static gboolean received_anykey(GIOChannel *source,
 		GIOCondition condition, void *data)
 {
-	struct sr_session *session;
+	struct otc_session *session;
 
 	(void)source;
 	(void)condition;
 	session = data;
 
 	watch_id = 0;
-	sr_session_stop(session);
+	otc_session_stop(session);
 
 	return G_SOURCE_REMOVE;
 }
 
 /* Turn off buffering on stdin and watch for input.
  */
-void add_anykey(struct sr_session *session)
+void add_anykey(struct otc_session *session)
 {
 	GIOChannel *channel;
 

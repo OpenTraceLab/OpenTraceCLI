@@ -1,7 +1,9 @@
 /*
- * This file is part of the sigrok-cli project.
+ * This file is part of the OpenTraceCLI project.
+Originally derived from opentrace-cli project.
  *
- * Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
+ * Copyright (C) 2024 OpenTraceLab Contributors
+Original Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +22,9 @@
 #include <config.h>
 #include <stdlib.h>
 #include <glib.h>
-#include "sigrok-cli.h"
+#include "opentrace-cli.h"
 
-struct sr_context *sr_ctx = NULL;
+struct otc_context *otc_ctx = NULL;
 #ifdef HAVE_SRD
 struct srd_session *srd_sess = NULL;
 #endif
@@ -38,7 +40,7 @@ static void logger(const gchar *log_domain, GLogLevelFlags log_level,
 	 * order to not mess up the CLI tool data output, e.g. VCD output.
 	 */
 	if (log_level & (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_WARNING)
-			|| opt_loglevel > SR_LOG_WARN) {
+			|| opt_loglevel > OTC_LOG_WARN) {
 		fprintf(stderr, "%s\n", message);
 		fflush(stderr);
 	}
@@ -48,98 +50,98 @@ static void logger(const gchar *log_domain, GLogLevelFlags log_level,
 
 }
 
-int select_channels(struct sr_dev_inst *sdi)
+int select_channels(struct otc_dev_inst *sdi)
 {
-	struct sr_channel *ch;
+	struct otc_channel *ch;
 	gboolean enabled;
 	GSList *selected_channels, *l, *channels;
 
-	channels = sr_dev_inst_channels_get(sdi);
+	channels = otc_dev_inst_channels_get(sdi);
 
 	if (opt_channels) {
 		if (!(selected_channels = parse_channelstring(sdi, opt_channels)))
-			return SR_ERR;
+			return OTC_ERR;
 
 		for (l = channels; l; l = l->next) {
 			ch = l->data;
 			enabled = (g_slist_find(selected_channels, ch) != NULL);
-			if (sr_dev_channel_enable(ch, enabled) != SR_OK)
-				return SR_ERR;
+			if (otc_dev_channel_enable(ch, enabled) != OTC_OK)
+				return OTC_ERR;
 		}
 		g_slist_free(selected_channels);
 	}
 #ifdef HAVE_SRD
 	map_pd_channels(sdi);
 #endif
-	return SR_OK;
+	return OTC_OK;
 }
 
-int maybe_config_get(struct sr_dev_driver *driver,
-		const struct sr_dev_inst *sdi, struct sr_channel_group *cg,
+int maybe_config_get(struct otc_dev_driver *driver,
+		const struct otc_dev_inst *sdi, struct otc_channel_group *cg,
 		uint32_t key, GVariant **gvar)
 {
-	if (sr_dev_config_capabilities_list(sdi, cg, key) & SR_CONF_GET)
-		return sr_config_get(driver, sdi, cg, key, gvar);
+	if (otc_dev_config_capabilities_list(sdi, cg, key) & OTC_CONF_GET)
+		return otc_config_get(driver, sdi, cg, key, gvar);
 
-	return SR_ERR_NA;
+	return OTC_ERR_NA;
 }
 
-int maybe_config_set(struct sr_dev_driver *driver,
-		const struct sr_dev_inst *sdi, struct sr_channel_group *cg,
+int maybe_config_set(struct otc_dev_driver *driver,
+		const struct otc_dev_inst *sdi, struct otc_channel_group *cg,
 		uint32_t key, GVariant *gvar)
 {
 	(void)driver;
 
-	if (sr_dev_config_capabilities_list(sdi, cg, key) & SR_CONF_SET)
-		return sr_config_set(sdi, cg, key, gvar);
+	if (otc_dev_config_capabilities_list(sdi, cg, key) & OTC_CONF_SET)
+		return otc_config_set(sdi, cg, key, gvar);
 
-	return SR_ERR_NA;
+	return OTC_ERR_NA;
 }
 
-int maybe_config_list(struct sr_dev_driver *driver,
-		const struct sr_dev_inst *sdi, struct sr_channel_group *cg,
+int maybe_config_list(struct otc_dev_driver *driver,
+		const struct otc_dev_inst *sdi, struct otc_channel_group *cg,
 		uint32_t key, GVariant **gvar)
 {
-	if (sr_dev_config_capabilities_list(sdi, cg, key) & SR_CONF_LIST)
-		return sr_config_list(driver, sdi, cg, key, gvar);
+	if (otc_dev_config_capabilities_list(sdi, cg, key) & OTC_CONF_LIST)
+		return otc_config_list(driver, sdi, cg, key, gvar);
 
-	return SR_ERR_NA;
+	return OTC_ERR_NA;
 }
 
-static void get_option(struct sr_dev_inst *sdi,
-	struct sr_channel_group *cg, const char *opt)
+static void get_option(struct otc_dev_inst *sdi,
+	struct otc_channel_group *cg, const char *opt)
 {
-	struct sr_dev_driver *driver;
-	const struct sr_key_info *ci;
+	struct otc_dev_driver *driver;
+	const struct otc_key_info *ci;
 	int ret;
 	GVariant *gvar;
-	const struct sr_key_info *srci, *srmqi, *srmqfi;
+	const struct otc_key_info *srci, *srmqi, *srmqfi;
 	uint32_t mq;
 	uint64_t mask, mqflags;
 	unsigned int j;
 	char *s;
 
-	driver = sr_dev_inst_driver_get(sdi);
+	driver = otc_dev_inst_driver_get(sdi);
 
-	ci = sr_key_info_name_get(SR_KEY_CONFIG, opt);
+	ci = otc_key_info_name_get(OTC_KEY_CONFIG, opt);
 	if (!ci)
 		g_critical("Unknown option '%s'", opt);
 
 	ret = maybe_config_get(driver, sdi, cg, ci->key, &gvar);
-	if (ret != SR_OK)
-		g_critical("Failed to get '%s': %s", opt, sr_strerror(ret));
+	if (ret != OTC_OK)
+		g_critical("Failed to get '%s': %s", opt, otc_strerror(ret));
 
-	srci = sr_key_info_get(SR_KEY_CONFIG, ci->key);
-	if (srci && srci->datatype == SR_T_MQ) {
+	srci = otc_key_info_get(OTC_KEY_CONFIG, ci->key);
+	if (srci && srci->datatype == OTC_T_MQ) {
 		g_variant_get(gvar, "(ut)", &mq, &mqflags);
-		if ((srmqi = sr_key_info_get(SR_KEY_MQ, mq)))
+		if ((srmqi = otc_key_info_get(OTC_KEY_MQ, mq)))
 			printf("%s", srmqi->id);
 		else
 			printf("%d", mq);
 		for (j = 0, mask = 1; j < 32; j++, mask <<= 1) {
 			if (!(mqflags & mask))
 				continue;
-			if ((srmqfi = sr_key_info_get(SR_KEY_MQFLAGS, mqflags & mask)))
+			if ((srmqfi = otc_key_info_get(OTC_KEY_MQFLAGS, mqflags & mask)))
 				printf("/%s", srmqfi->id);
 			else
 				printf("/%" PRIu64, mqflags & mask);
@@ -157,13 +159,13 @@ static void get_option(struct sr_dev_inst *sdi,
 static void get_options(void)
 {
 	GSList *devices;
-	struct sr_dev_inst *sdi;
+	struct otc_dev_inst *sdi;
 	size_t get_idx;
 	char *get_text, *cg_name;
 	GHashTable *args;
 	GHashTableIter iter;
 	gpointer key, value;
-	struct sr_channel_group *cg;
+	struct otc_channel_group *cg;
 
 	/* Lookup and open the device. */
 	devices = device_scan();
@@ -174,7 +176,7 @@ static void get_options(void)
 	sdi = devices->data;
 	g_slist_free(devices);
 
-	if (sr_dev_open(sdi) != SR_OK) {
+	if (otc_dev_open(sdi) != OTC_OK) {
 		g_critical("Failed to open device.");
 		return;
 	}
@@ -187,23 +189,23 @@ static void get_options(void)
 		args = parse_generic_arg(get_text, FALSE, "channel_group");
 		if (!args)
 			continue;
-		cg_name = g_hash_table_lookup(args, "sigrok_key");
+		cg_name = g_hash_table_lookup(args, "opentrace_key");
 		cg = lookup_channel_group(sdi, cg_name);
 		g_hash_table_iter_init(&iter, args);
 		while (g_hash_table_iter_next(&iter, &key, &value)) {
-			if (g_ascii_strcasecmp(key, "sigrok_key") == 0)
+			if (g_ascii_strcasecmp(key, "opentrace_key") == 0)
 				continue;
 			get_option(sdi, cg, key);
 		}
 	}
 
 	/* Close the device. */
-	sr_dev_close(sdi);
+	otc_dev_close(sdi);
 }
 
 static void set_options(void)
 {
-	struct sr_dev_inst *sdi;
+	struct otc_dev_inst *sdi;
 	GSList *devices;
 
 	if (!opt_configs) {
@@ -218,14 +220,14 @@ static void set_options(void)
 	sdi = devices->data;
 	g_slist_free(devices);
 
-	if (sr_dev_open(sdi) != SR_OK) {
+	if (otc_dev_open(sdi) != OTC_OK) {
 		g_critical("Failed to open device.");
 		return;
 	}
 
 	set_dev_options_array(sdi, opt_configs);
 
-	sr_dev_close(sdi);
+	otc_dev_close(sdi);
 }
 
 int main(int argc, char **argv)
@@ -236,11 +238,11 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	/* Set the loglevel (amount of messages to output) for libsigrok. */
-	if (sr_log_loglevel_set(opt_loglevel) != SR_OK)
+	/* Set the loglevel (amount of messages to output) for libopentrace. */
+	if (otc_log_loglevel_set(opt_loglevel) != OTC_OK)
 		goto done;
 
-	if (sr_init(&sr_ctx) != SR_OK)
+	if (otc_init(&otc_ctx) != OTC_OK)
 		goto done;
 
 #ifdef HAVE_SRD
@@ -249,7 +251,7 @@ int main(int argc, char **argv)
 		goto done;
 	}
 
-	/* Set the loglevel (amount of messages to output) for libsigrokdecode. */
+	/* Set the loglevel (amount of messages to output) for libopentracedecode. */
 	if (srd_log_loglevel_set(opt_loglevel) != SRD_OK)
 		goto done;
 
@@ -333,8 +335,8 @@ int main(int argc, char **argv)
 #endif
 
 done:
-	if (sr_ctx)
-		sr_exit(sr_ctx);
+	if (otc_ctx)
+		otc_exit(otc_ctx);
 
 	return 0;
 }
