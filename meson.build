@@ -49,7 +49,7 @@ add_project_arguments('-D_POSIX_C_SOURCE=200112L', language : 'c')
 
 # Required dependencies
 glib_dep = dependency('glib-2.0', version : '>= 2.32.0')
-libopentracecapture_dep = dependency('libopentracecapture', version : '>= 0.5.0')
+libopentracecapture_dep = dependency('opentracecapture', version : '>= 0.5.0')
 
 # Optional dependencies
 libopentracedecode_dep = dependency('libopentracedecode', 
