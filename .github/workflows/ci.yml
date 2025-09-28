@@ -78,6 +78,7 @@ jobs:
           meson setup build --buildtype=release -Dbindings_cxx=false
           meson compile -C build
           sudo meson install -C build
+          sudo ldconfig
 
       - name: macOS deps
         if: runner.os == 'macOS'
