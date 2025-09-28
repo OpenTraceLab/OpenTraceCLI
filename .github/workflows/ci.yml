@@ -9,10 +9,6 @@ on:
       - ".github/workflows/**"
   push:
     branches: [main]
-    paths:
-      - "src/**"
-      - "meson.build"
-      - "meson_options.txt"
       - ".github/workflows/**"
   workflow_dispatch: {}
 
