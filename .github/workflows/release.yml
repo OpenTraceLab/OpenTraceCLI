@@ -104,7 +104,7 @@ jobs:
           # Build and install OpenTraceCapture dependency
           git clone https://github.com/opentracelab/OpenTraceCapture.git /tmp/opentracecapture
           cd /tmp/opentracecapture
-          meson setup build --buildtype=release
+          meson setup build --buildtype=release -Dbindings_cxx=false
           meson compile -C build
           meson install -C build
 
