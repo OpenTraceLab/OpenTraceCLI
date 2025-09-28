@@ -49,7 +49,7 @@ add_project_arguments('-D_POSIX_C_SOURCE=200112L', language : 'c')
 
 # Required dependencies
 glib_dep = dependency('glib-2.0', version : '>= 2.32.0')
-libopentrace_dep = dependency('libopentrace', version : '>= 0.5.0')
+libopentracecapture_dep = dependency('libopentracecapture', version : '>= 0.5.0')
 
 # Optional dependencies
 libopentracedecode_dep = dependency('libopentracedecode', 
@@ -66,7 +66,7 @@ conf_data.set('HAVE_OTD', libopentracedecode_dep.found())
 
 # Get library versions for summary
 glib_version = glib_dep.version()
-libopentrace_version = libopentrace_dep.version()
+libopentracecapture_version = libopentracecapture_dep.version()
 
 configure_file(
   output : 'config.h',
@@ -92,7 +92,7 @@ opentrace_cli_sources = [
 ]
 
 # Dependencies list
-deps = [libopentrace_dep, glib_dep]
+deps = [libopentracecapture_dep, glib_dep]
 if libopentracedecode_dep.found()
   deps += libopentracedecode_dep
 endif
@@ -129,7 +129,7 @@ summary({
 
 summary({
   'glib-2.0' : glib_version,
-  'libopentrace' : libopentrace_version,
+  'libopentracecapture' : libopentracecapture_version,
 }, section : 'Required libraries')
 
 if libopentracedecode_dep.found()
