@@ -1,5 +1,5 @@
 project('opentrace-cli', 'c',
-  version : '0.8.0',
+  version : '0.1.0',
   license : 'GPL-3.0-or-later',
   meson_version : '>= 0.56.0',
   default_options : [
@@ -49,7 +49,7 @@ add_project_arguments('-D_POSIX_C_SOURCE=200112L', language : 'c')
 
 # Required dependencies
 glib_dep = dependency('glib-2.0', version : '>= 2.32.0')
-libopentracecapture_dep = dependency('opentracecapture', version : '>= 0.5.0')
+libopentracecapture_dep = dependency('opentracecapture')
 
 # Optional dependencies
 libopentracedecode_dep = dependency('libopentracedecode', 
