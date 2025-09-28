@@ -28,7 +28,7 @@ Original Copyright (C) 2011 Bert Vermeulen <bert@biot.com>
 /* First, so we avoid a _POSIX_C_SOURCE warning. */
 #include <libopentracedecode/libopentracedecode.h>
 #endif
-#include <opentracecapture/libopentracecapture.h>
+#include <opentracecapture/opentracecapture.h>
 
 #define DEFAULT_OUTPUT_FORMAT_FILE "otczip"
 #define DEFAULT_OUTPUT_FORMAT_NOFILE "bits:width=64"
