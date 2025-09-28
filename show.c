@@ -69,7 +69,7 @@ void show_version(void)
 	char *str;
 	const char *lib, *version;
 
-	printf("opentrace-cli %s\n\n", SC_PACKAGE_VERSION_STRING);
+	printf("opentrace-cli %s\n\n", OTC_PACKAGE_VERSION_STRING);
 
 	printf("Libraries and features:\n");
 
