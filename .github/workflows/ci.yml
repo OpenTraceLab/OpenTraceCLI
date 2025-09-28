@@ -9,7 +9,6 @@ on:
       - ".github/workflows/**"
   push:
     branches: [main]
-      - ".github/workflows/**"
   workflow_dispatch: {}
 
 concurrency:
