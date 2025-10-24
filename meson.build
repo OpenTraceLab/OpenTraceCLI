@@ -52,8 +52,8 @@ glib_dep = dependency('glib-2.0', version : '>= 2.32.0')
 libopentracecapture_dep = dependency('opentracecapture')
 
 # Optional dependencies
-libopentracedecode_dep = dependency('libopentracedecode', 
-  version : '>= 0.5.0', 
+libopentracedecode_dep = dependency('opentracedecode', 
+  version : '>= 0.1.0', 
   required : get_option('decode'),
   disabler : true
 )

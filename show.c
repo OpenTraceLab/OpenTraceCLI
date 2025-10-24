@@ -56,7 +56,7 @@ static gint sort_drivers(gconstpointer a, gconstpointer b)
 #ifdef HAVE_OTD
 static gint sort_pds(gconstpointer a, gconstpointer b)
 {
-	const struct srd_decoder *sda = a, *sdb = b;
+	const struct otd_decoder *sda = a, *sdb = b;
 
 	return strcmp(sda->id, sdb->id);
 }
@@ -102,12 +102,12 @@ void show_version(void)
 
 #ifdef HAVE_OTD
 	printf("- libopentracedecode %s/%s (rt: %s/%s).\n",
-		OTD_PACKAGE_VERSION_STRING, OTD_LIB_VERSION_STRING,
-		srd_package_version_string_get(), srd_lib_version_string_get());
+		otd_package_version_string_get(), otd_lib_version_string_get(),
+		otd_package_version_string_get(), otd_lib_version_string_get());
 
 	s = g_string_sized_new(200);
 	g_string_append(s, " - Libs:\n");
-	l_orig = srd_buildinfo_libs_get();
+	l_orig = otd_buildinfo_libs_get();
 	for (l = l_orig; l; l = l->next) {
 		m = l->data;
 		lib = m->data;
@@ -120,7 +120,7 @@ void show_version(void)
 	printf("%s\n", s->str);
 	g_string_free(s, TRUE);
 
-	str = srd_buildinfo_host_get();
+	str = otd_buildinfo_host_get();
 	printf("  - Host: %s.\n", str);
 	g_free(str);
 #endif
@@ -136,7 +136,7 @@ void show_supported(void)
 	GSList *sl;
 	int i;
 #ifdef HAVE_OTD
-	struct srd_decoder *dec;
+	struct otd_decoder *dec;
 #endif
 
 	printf("Supported hardware drivers:\n");
@@ -191,10 +191,10 @@ void show_supported(void)
 	g_slist_free(sl);
 
 #ifdef HAVE_OTD
-	if (srd_init(NULL) == OTD_OK) {
+	if (otd_init(NULL) == OTD_OK) {
 		printf("Supported protocol decoders:\n");
-		srd_decoder_load_all();
-		sl = g_slist_copy((GSList *)srd_decoder_list());
+		otd_decoder_load_all();
+		sl = g_slist_copy((GSList *)otd_decoder_list());
 		sl = g_slist_sort(sl, sort_pds);
 		for (l = sl; l; l = l->next) {
 			dec = l->data;
@@ -204,7 +204,7 @@ void show_supported(void)
 				printf("  %-20s %s\n", "", dec->desc);
 		}
 		g_slist_free(sl);
-		srd_exit();
+		otd_exit();
 	}
 	printf("\n");
 #endif
@@ -217,13 +217,13 @@ void show_supported_wiki(void)
 #else
 	const GSList *l;
 	GSList *sl;
-	struct srd_decoder *dec;
+	struct otd_decoder *dec;
 
-	if (srd_init(NULL) != OTD_OK)
+	if (otd_init(NULL) != OTD_OK)
 		return;
 
-	srd_decoder_load_all();
-	sl = g_slist_copy((GSList *)srd_decoder_list());
+	otd_decoder_load_all();
+	sl = g_slist_copy((GSList *)otd_decoder_list());
 	sl = g_slist_sort(sl, sort_pds);
 
 	printf("== Supported protocol decoders ==\n\n");
@@ -282,7 +282,7 @@ void show_supported_wiki(void)
 		g_string_free(out, TRUE);
 	}
 	g_slist_free(sl);
-	srd_exit();
+	otd_exit();
 
 	printf("\n|}\n");
 #endif
@@ -861,10 +861,10 @@ void show_dev_detail(void)
 #ifdef HAVE_OTD
 static void show_pd_detail_single(const char *pd)
 {
-	struct srd_decoder *dec;
-	struct srd_decoder_option *o;
-	struct srd_channel *pdch;
-	struct srd_decoder_annotation_row *r;
+	struct otd_decoder *dec;
+	struct otd_decoder_option *o;
+	struct otd_channel *pdch;
+	struct otd_decoder_annotation_row *r;
 	GSList *l, *ll, *ol;
 	int idx;
 	char **pdtokens, **pdtok, *optsep, **ann, **bin, *val, *doc, *str;
@@ -874,7 +874,7 @@ static void show_pd_detail_single(const char *pd)
 		/* Strip options. */
 		if ((optsep = strchr(*pdtok, ':')))
 			*optsep = '\0';
-		if (!(dec = srd_decoder_get_by_id(*pdtok))) {
+		if (!(dec = otd_decoder_get_by_id(*pdtok))) {
 			g_critical("Protocol decoder %s not found.", *pdtok);
 			return;
 		}
@@ -982,7 +982,7 @@ static void show_pd_detail_single(const char *pd)
 		} else {
 			printf("None.\n");
 		}
-		if ((doc = srd_decoder_doc_get(dec))) {
+		if ((doc = otd_decoder_doc_get(dec))) {
 			printf("Documentation:\n%s\n",
 			       doc[0] == '\n' ? doc + 1 : doc);
 			g_free(doc);

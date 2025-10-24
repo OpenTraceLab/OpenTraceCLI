@@ -33,16 +33,16 @@ static GHashTable *pd_channel_maps = NULL;
 
 uint64_t pd_samplerate = 0;
 
-extern struct srd_session *srd_sess;
+extern struct otd_session *otd_sess;
 
 static const char *keyword_assign = "assign_channels";
 static const char *assign_by_index = "auto_index";
 static const char *assign_by_name = "auto_names";
 
-static int opts_to_gvar(struct srd_decoder *dec, GHashTable *hash,
+static int opts_to_gvar(struct otd_decoder *dec, GHashTable *hash,
 		GHashTable **options)
 {
-	struct srd_decoder_option *o;
+	struct otd_decoder_option *o;
 	GSList *optl;
 	GVariant *gvar;
 	gint64 val_int;
@@ -108,10 +108,10 @@ static int move_hash_element(GHashTable *src, GHashTable *dest, const void *key)
 	return TRUE;
 }
 
-static GHashTable *extract_channel_map(struct srd_decoder *dec, GHashTable *hash)
+static GHashTable *extract_channel_map(struct otd_decoder *dec, GHashTable *hash)
 {
 	GHashTable *channel_map;
-	struct srd_channel *pdch;
+	struct otd_channel *pdch;
 	GSList *l;
 
 	channel_map = g_hash_table_new_full(g_str_hash, g_str_equal,
@@ -133,8 +133,8 @@ static GHashTable *extract_channel_map(struct srd_decoder *dec, GHashTable *hash
 static int register_pd(char *opt_pds, char *opt_pd_annotations)
 {
 	int ret;
-	struct srd_decoder *dec;
-	struct srd_decoder_inst *di, *di_prior;
+	struct otd_decoder *dec;
+	struct otd_decoder_inst *di, *di_prior;
 	char **pdtokens, **pdtok, *pd_name;
 	GHashTable *pd_opthash, *options, *channels;
 	GList *leftover, *l;
@@ -153,12 +153,12 @@ static int register_pd(char *opt_pds, char *opt_pd_annotations)
 
 		pd_name = g_strdup(g_hash_table_lookup(pd_opthash, "opentrace_key"));
 		g_hash_table_remove(pd_opthash, "opentrace_key");
-		if (srd_decoder_load(pd_name) != OTD_OK) {
+		if (otd_decoder_load(pd_name) != OTD_OK) {
 			g_critical("Failed to load protocol decoder %s.", pd_name);
 			ret = 1;
 			break;
 		}
-		if (!(dec = srd_decoder_get_by_id(pd_name))) {
+		if (!(dec = otd_decoder_get_by_id(pd_name))) {
 			g_critical("Failed to get decoder %s by id.", pd_name);
 			ret = 1;
 			break;
@@ -179,7 +179,7 @@ static int register_pd(char *opt_pds, char *opt_pd_annotations)
 			break;
 		}
 
-		if (!(di = srd_inst_new(srd_sess, pd_name, options))) {
+		if (!(di = otd_inst_new(otd_sess, pd_name, options))) {
 			g_critical("Failed to instantiate protocol decoder %s.", pd_name);
 			ret = 1;
 			break;
@@ -204,7 +204,7 @@ static int register_pd(char *opt_pds, char *opt_pd_annotations)
 					g_slist_append(NULL, GINT_TO_POINTER(-1)));
 		}
 		if (di_prior) {
-			if (srd_inst_stack(srd_sess, di_prior, di) != OTD_OK) {
+			if (otd_inst_stack(otd_sess, di_prior, di) != OTD_OK) {
 				g_critical("Failed to stack %s -> %s.",
 					di_prior->inst_id, di->inst_id);
 				ret = 1;
@@ -259,8 +259,8 @@ static void map_pd_inst_channels(void *key, void *value, void *user_data)
 	GHashTable *channel_map;
 	GHashTable *channel_indices;
 	GSList *channel_list;
-	struct srd_decoder_inst *di;
-	struct srd_decoder *pd;
+	struct otd_decoder_inst *di;
+	struct otd_decoder *pd;
 	GVariant *var;
 	void *channel_id;
 	void *channel_target;
@@ -274,12 +274,12 @@ static void map_pd_inst_channels(void *key, void *value, void *user_data)
 	} assign;
 	const char *keyword;
 	GSList *l_pd, *l_pdo, *l_ch;
-	struct srd_channel *pdch;
+	struct otd_channel *pdch;
 
 	channel_map = value;
 	channel_list = user_data;
 
-	di = srd_inst_find_by_id(srd_sess, key);
+	di = otd_inst_find_by_id(otd_sess, key);
 	if (!di) {
 		g_critical("Protocol decoder instance \"%s\" not found.",
 			   (char *)key);
@@ -404,7 +404,7 @@ static void map_pd_inst_channels(void *key, void *value, void *user_data)
 		g_hash_table_insert(channel_indices, g_strdup(channel_id), var);
 	}
 
-	srd_inst_channel_set_all(di, channel_indices);
+	otd_inst_channel_set_all(di, channel_indices);
 	g_hash_table_destroy(channel_indices);
 }
 
@@ -425,13 +425,13 @@ void map_pd_channels(struct otc_dev_inst *sdi)
 int setup_pd_annotations(char *opt_pd_annotations)
 {
 	GSList *l, *l_ann;
-	struct srd_decoder *dec;
+	struct otd_decoder *dec;
 	int ann_class;
 	char **pds, **pdtok, **keyval, **annlist, **ann, **ann_descr;
 	const char *dec_id;
 	const char *ann_txt;
 	const char *ann_id;
-	const struct srd_decoder_annotation_row *row_desc;
+	const struct otd_decoder_annotation_row *row_desc;
 	char **ann_diag;
 
 	/* Set up custom list of PDs and annotations to show. */
@@ -439,7 +439,7 @@ int setup_pd_annotations(char *opt_pd_annotations)
 	for (pdtok = pds; *pdtok && **pdtok; pdtok++) {
 		keyval = g_strsplit(*pdtok, "=", 0);
 		dec_id = keyval[0];
-		if (!(dec = srd_decoder_get_by_id(dec_id))) {
+		if (!(dec = otd_decoder_get_by_id(dec_id))) {
 			g_critical("Protocol decoder '%s' not found.", dec_id);
 			g_strfreev(keyval);
 			g_strfreev(pds);
@@ -523,14 +523,14 @@ int setup_pd_annotations(char *opt_pd_annotations)
 
 int setup_pd_meta(char *opt_pd_meta)
 {
-	struct srd_decoder *dec;
+	struct otd_decoder *dec;
 	char **pds, **pdtok;
 
 	pd_meta_visible = g_hash_table_new_full(g_str_hash, g_int_equal,
 			g_free, NULL);
 	pds = g_strsplit(opt_pd_meta, ",", 0);
 	for (pdtok = pds; *pdtok && **pdtok; pdtok++) {
-		if (!(dec = srd_decoder_get_by_id(*pdtok))) {
+		if (!(dec = otd_decoder_get_by_id(*pdtok))) {
 			g_critical("Protocol decoder '%s' not found.", *pdtok);
 			return 1;
 		}
@@ -545,7 +545,7 @@ int setup_pd_meta(char *opt_pd_meta)
 int setup_pd_binary(char *opt_pd_binary)
 {
 	GSList *l;
-	struct srd_decoder *dec;
+	struct otd_decoder *dec;
 	int bin_class;
 	char **pds, **pdtok, **keyval, **bin_name;
 
@@ -554,7 +554,7 @@ int setup_pd_binary(char *opt_pd_binary)
 	pds = g_strsplit(opt_pd_binary, ",", 0);
 	for (pdtok = pds; *pdtok && **pdtok; pdtok++) {
 		keyval = g_strsplit(*pdtok, "=", 0);
-		if (!(dec = srd_decoder_get_by_id(keyval[0]))) {
+		if (!(dec = otd_decoder_get_by_id(keyval[0]))) {
 			g_critical("Protocol decoder '%s' not found.", keyval[0]);
 			return 1;
 		}
@@ -662,12 +662,12 @@ static double jsontrace_ts_usec(uint64_t snum)
 }
 
 /* Emit two Google Trace Events (JSON) for one PD annotation (ss, es). */
-static void jsontrace_annotation(struct srd_decoder *dec,
-	struct srd_proto_data_annotation *pda, struct srd_proto_data *pdata)
+static void jsontrace_annotation(struct otd_decoder *dec,
+	struct otd_proto_data_annotation *pda, struct otd_proto_data *pdata)
 {
 	char *row_text;
 	GSList *lrow, *lcls;
-	struct srd_decoder_annotation_row *row;
+	struct otd_decoder_annotation_row *row;
 	int cls;
 	char **ann_descr;
 
@@ -732,10 +732,10 @@ static void jsontrace_annotation(struct srd_decoder *dec,
 	jsontrace_open_close(FALSE, FALSE, TRUE);
 }
 
-void show_pd_annotations(struct srd_proto_data *pdata, void *cb_data)
+void show_pd_annotations(struct otd_proto_data *pdata, void *cb_data)
 {
-	struct srd_decoder *dec;
-	struct srd_proto_data_annotation *pda;
+	struct otd_decoder *dec;
+	struct otd_proto_data_annotation *pda;
 	GSList *ann_list, *l;
 	int i;
 	char **ann_descr;
@@ -821,7 +821,7 @@ void show_pd_annotations(struct srd_proto_data *pdata, void *cb_data)
 	fflush(stdout);
 }
 
-void show_pd_meta(struct srd_proto_data *pdata, void *cb_data)
+void show_pd_meta(struct otd_proto_data *pdata, void *cb_data)
 {
 	(void)cb_data;
 
@@ -838,9 +838,9 @@ void show_pd_meta(struct srd_proto_data *pdata, void *cb_data)
 	fflush(stdout);
 }
 
-void show_pd_binary(struct srd_proto_data *pdata, void *cb_data)
+void show_pd_binary(struct otd_proto_data *pdata, void *cb_data)
 {
-	struct srd_proto_data_binary *pdb;
+	struct otd_proto_data_binary *pdb;
 	gpointer classp;
 	int classi;
 

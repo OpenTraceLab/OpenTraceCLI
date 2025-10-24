@@ -26,7 +26,7 @@ Original Copyright (C) 2011 Bert Vermeulen <bert@biot.com>
 
 #ifdef HAVE_OTD
 /* First, so we avoid a _POSIX_C_SOURCE warning. */
-#include <libopentracedecode/libopentracedecode.h>
+#include <opentracedecode/libopentracedecode.h>
 #endif
 #include <opentracecapture/opentracecapture.h>
 
@@ -98,9 +98,9 @@ int register_pds(gchar **all_pds, char *opt_pd_annotations);
 int setup_pd_annotations(char *opt_pd_annotations);
 int setup_pd_meta(char *opt_pd_meta);
 int setup_pd_binary(char *opt_pd_binary);
-void show_pd_annotations(struct srd_proto_data *pdata, void *cb_data);
-void show_pd_meta(struct srd_proto_data *pdata, void *cb_data);
-void show_pd_binary(struct srd_proto_data *pdata, void *cb_data);
+void show_pd_annotations(struct otd_proto_data *pdata, void *cb_data);
+void show_pd_meta(struct otd_proto_data *pdata, void *cb_data);
+void show_pd_binary(struct otd_proto_data *pdata, void *cb_data);
 void show_pd_prepare(void);
 void show_pd_close(void);
 void map_pd_channels(struct otc_dev_inst *sdi);

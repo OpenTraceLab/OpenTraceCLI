@@ -26,7 +26,7 @@ Original Copyright (C) 2013 Bert Vermeulen <bert@biot.com>
 
 struct otc_context *otc_ctx = NULL;
 #ifdef HAVE_OTD
-struct srd_session *srd_sess = NULL;
+struct otd_session *otd_sess = NULL;
 #endif
 
 static void logger(const gchar *log_domain, GLogLevelFlags log_level,
@@ -252,13 +252,13 @@ int main(int argc, char **argv)
 	}
 
 	/* Set the loglevel (amount of messages to output) for libopentracedecode. */
-	if (srd_log_loglevel_set(opt_loglevel) != OTD_OK)
+	if (otd_log_loglevel_set(opt_loglevel) != OTD_OK)
 		goto done;
 
 	if (opt_pds) {
-		if (srd_init(NULL) != OTD_OK)
+		if (otd_init(NULL) != OTD_OK)
 			goto done;
-		if (srd_session_new(&srd_sess) != OTD_OK) {
+		if (otd_session_new(&otd_sess) != OTD_OK) {
 			g_critical("Failed to create new decode session.");
 			goto done;
 		}
@@ -271,20 +271,20 @@ int main(int argc, char **argv)
 				goto done;
 			if (setup_binary_stdout() != 0)
 				goto done;
-			if (srd_pd_output_callback_add(srd_sess, OTD_OUTPUT_BINARY,
+			if (otd_pd_output_callback_add(otd_sess, OTD_OUTPUT_BINARY,
 					show_pd_binary, NULL) != OTD_OK)
 				goto done;
 		} else if (opt_pd_meta) {
 			if (setup_pd_meta(opt_pd_meta) != 0)
 				goto done;
-			if (srd_pd_output_callback_add(srd_sess, OTD_OUTPUT_META,
+			if (otd_pd_output_callback_add(otd_sess, OTD_OUTPUT_META,
 					show_pd_meta, NULL) != OTD_OK)
 				goto done;
 		} else {
 			if (opt_pd_annotations)
 				if (setup_pd_annotations(opt_pd_annotations) != 0)
 					goto done;
-			if (srd_pd_output_callback_add(srd_sess, OTD_OUTPUT_ANN,
+			if (otd_pd_output_callback_add(otd_sess, OTD_OUTPUT_ANN,
 					show_pd_annotations, NULL) != OTD_OK)
 				goto done;
 		}
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
 	if (opt_pds)
 		show_pd_close();
 	if (opt_pds)
-		srd_exit();
+		otd_exit();
 #endif
 
 done:
