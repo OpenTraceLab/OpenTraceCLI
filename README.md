@@ -31,3 +31,7 @@ meson install -C build
 ```bash
 opentrace-cli --help
 ```
+
+## Community
+
+Join our community discussions on Discord: https://discord.gg/DsYwx59MPh
