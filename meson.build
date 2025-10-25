@@ -16,7 +16,9 @@ git_version_from_tag = git_version_cmd.returncode() == 0 ? git_version_cmd.stdou
 # Version handling - priority: git tag > project version
 if git_version_from_tag != ''
   # Remove 'v' prefix if present
-  cli_version = git_version_from_tag.startswith('v') ? git_version_from_tag.substring(1) : git_version_from_tag
+  cli_version_raw = git_version_from_tag.startswith('v') ? git_version_from_tag.substring(1) : git_version_from_tag
+  # Strip pre-release suffix (e.g., "0.1.0-alpha.3" -> "0.1.0")
+  cli_version = cli_version_raw.contains('-') ? cli_version_raw.split('-')[0] : cli_version_raw
 else
   cli_version = meson.project_version()
 endif
